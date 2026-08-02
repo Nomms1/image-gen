@@ -421,7 +421,7 @@
 </div>
 
 <script>
-const SERVER = "http://127.0.0.1:8188";
+const SERVER = "https://motorcycles-violation-bottles-earning.trycloudflare.com";
 const clientId = "simple_" + Math.random().toString(36).slice(2);
 const CORRECT_PASSWORD = "shenron";
 
@@ -840,7 +840,7 @@ async function queueOne(promptText, selected, total) {
 }
 
 function watchJob(promptId, total, startTime, seed, promptText) {
-  if (!ws || ws.readyState > 1) ws = new WebSocket(`ws://127.0.0.1:8188/ws?clientId=${clientId}`);
+  if (!ws || ws.readyState > 1) ws = new WebSocket(`if (!ws || ws.readyState > 1) {     const wsUrl = SERVER.replace("https://", "wss://").replace("http://", "ws://");     ws = new WebSocket(`${wsUrl}/ws?clientId=${clientId}`);   }/ws?clientId=${clientId}`);
 
   const handler = (event) => {
     try {

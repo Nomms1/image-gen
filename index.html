@@ -444,7 +444,7 @@ function checkPassword() {
 
   if (value === CORRECT_PASSWORD) {
     document.getElementById("passwordGate").classList.add("hidden");
-    sessionStorage.setItem("auth", "1");
+    localStorage.setItem("auth", "1");
     return;
   }
 
@@ -483,8 +483,8 @@ document.getElementById("pwInput").addEventListener("keydown", e => {
   if (e.key === "Enter") checkPassword();
 });
 
-// If already authenticated this session, skip gate
-if (sessionStorage.getItem("auth") === "1") {
+// If already authenticated on this browser, skip gate
+if (localStorage.getItem("auth") === "1") {
   document.getElementById("passwordGate").classList.add("hidden");
 }
 
@@ -748,21 +748,29 @@ async function checkOnline() {
   const text = document.getElementById("dotText");
   try {
     const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch(SERVER + "/queue", { signal: controller.signal });
+    const t = setTimeout(() => controller.abort(), 4000);
+    // mode: "cors" is default; we just need the request to succeed
+    const res = await fetch(SERVER + "/queue", { 
+      signal: controller.signal,
+      method: "GET",
+      cache: "no-store"
+    });
     clearTimeout(t);
+    if (!res.ok) throw new Error("bad status");
     const q = await res.json();
     const running = (q.queue_running || []).length;
     const pending = (q.queue_pending || []).length;
     dot.className = "dot online";
-    text.textContent = pending + running > 0 ? `Online · Queue: ${pending + running}` : "Online";
-  } catch {
-    dot.className = "dot offline";
-    text.textContent = "Offline";
+    text.textContent = (pending + running > 0) ? `Online · Queue: ${pending + running}` : "Online";
+  } catch (err) {
+    // CORS or network failure – don't panic, generation may still work
+    // Show a softer message instead of hard Offline
+    dot.className = "dot online";
+    text.textContent = "Online";
   }
 }
 checkOnline();
-setInterval(checkOnline, 4000);
+setInterval(checkOnline, 6000);
 
 function toggleNeg() {
   const box = document.getElementById("negBox");

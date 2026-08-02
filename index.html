@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generate</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root {
+    --bg: #0c0c0c;
+    --card: #141414;
+    --border: #2a2a2a;
+    --text: #e8e8e8;
+    --muted: #777;
+    --accent: #fff;
+  }
+  body.light {
+    --bg: #f4f4f5;
+    --card: #ffffff;
+    --border: #e4e4e7;
+    --text: #18181b;
+    --muted: #71717a;
+    --accent: #18181b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
+
+  /* Password Gate */
+  #passwordGate {
+    position: fixed;
+    inset: 0;
+    background: #0c0c0c;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #passwordGate.hidden { display: none; }
+  .gate-box {
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  .gate-box h2 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .gate-box p {
+    font-size: 0.85rem;
+    color: #777;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+  .gate-box input {
+    width: 100%;
+    background: #0c0c0c;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #eee;
+    font-size: 1rem;
+    outline: none;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .gate-box input:focus { border-color: #555; }
+  .gate-box button {
+    width: 100%;
+    background: #fff;
+    color: #111;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .gate-box button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .gate-error {
+    font-size: 0.8rem;
+    color: #ef4444;
+    margin-top: 10px;
+    min-height: 1.2em;
+  }
+  .gate-note {
+    font-size: 0.75rem;
+    color: #555;
+    margin-top: 18px;
+    line-height: 1.4;
+  }
+
+  .status-dot {
+    position: fixed; top: 18px; right: 18px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.8rem; color: var(--muted); z-index: 100;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+  .dot.online { background: #22c55e; animation: pulse-green 1.6s infinite; }
+  .dot.offline { background: #ef4444; animation: pulse-red 1.6s infinite; }
+  @keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  @keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  }
+  .theme-btn {
+    position: fixed; top: 18px; left: 18px;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 6px 10px;
+    font-size: 0.8rem; cursor: pointer; z-index: 100;
+  }
+  .card { width: 100%; max-width: 720px; }
+  h1 { font-size: 1.25rem; font-weight: 500; margin-bottom: 20px; color: var(--text); }
+  label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  textarea, input[type="text"] {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; color: var(--text); font-size: 0.95rem;
+    outline: none; margin-bottom: 14px; resize: vertical;
+  }
+  textarea { min-height: 90px; }
+  .row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .ratio-btn, .batch-select, .tool-btn {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; cursor: pointer;
+  }
+  .ratio-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .lora-help { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
+  .lora-box {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 14px; max-height: 180px; overflow-y: auto;
+  }
+  .lora-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
+  .lora-item:last-child { border-bottom: none; }
+  .lora-item input { margin-top: 3px; accent-color: var(--accent); }
+  .lora-name { font-weight: 500; }
+  .lora-desc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  .active-loras {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .active-lora-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .active-lora-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .active-lora-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .active-lora-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .active-lora-off, .preview-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .active-lora-off:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+  }
+  .preview-btn:hover {
+    border-color: #22c55e;
+    color: #22c55e;
+  }
+  .active-lora-strength {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .active-lora-strength input {
+    flex: 1;
+  }
+  .active-lora-strength span {
+    min-width: 32px;
+    text-align: right;
+  }
+
+  .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .controls button { flex: 1; }
+  button.primary {
+    background: var(--accent); color: var(--bg); border: none; border-radius: 12px;
+    padding: 14px; font-size: 1rem; font-weight: 600; cursor: pointer;
+  }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; }
+  .status { font-size: 0.9rem; color: var(--muted); min-height: 1.3em; margin-bottom: 8px; }
+  .progress-wrap { display: none; margin-bottom: 16px; }
+  .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 4px; transition: width 0.3s, background 0.4s; background: #ef4444; }
+  .gallery { margin-top: 24px; display: none; }
+  .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .gallery-header h2 { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+  .gallery-actions-top button {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 6px 10px; font-size: 0.75rem; cursor: pointer; margin-left: 6px;
+  }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .gallery-item { position: relative; border-radius: 10px; overflow: hidden; background: var(--card); }
+  .gallery-item img { width: 100%; display: block; aspect-ratio: 3/2; object-fit: cover; cursor: pointer; }
+  .gallery-meta { padding: 8px; font-size: 0.72rem; color: var(--muted); }
+  .gallery-btns { position: absolute; bottom: 8px; right: 8px; display: flex; gap: 5px; flex-wrap: wrap; }
+  .gallery-btns button {
+    padding: 4px 8px; font-size: 0.7rem; border-radius: 6px;
+    background: rgba(0,0,0,0.75); color: #fff; border: 1px solid #444; cursor: pointer;
+  }
+  .gallery-btns .del { background: rgba(180,30,30,0.85); }
+  .neg-toggle { font-size: 0.8rem; color: var(--muted); cursor: pointer; margin-bottom: 8px; user-select: none; }
+  .neg-box { display: none; margin-bottom: 14px; }
+
+  .star {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    font-size: 18px;
+    opacity: 1;
+    animation: floatStar 1.4s ease-out forwards;
+    text-shadow: 0 0 6px rgba(255,220,100,0.8);
+  }
+  @keyframes floatStar {
+    0%   { transform: translateY(0) scale(0.4) rotate(0deg); opacity: 0; }
+    15%  { opacity: 1; transform: translateY(-10px) scale(1.1) rotate(20deg); }
+    100% { transform: translateY(-120px) scale(0.6) rotate(60deg); opacity: 0; }
+  }
+
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 300; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    max-width: 520px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 24px;
+    color: var(--text);
+  }
+  .modal h2 { font-size: 1.1rem; margin-bottom: 14px; }
+  .modal h3 { font-size: 0.9rem; margin: 16px 0 6px; }
+  .modal p, .modal li { font-size: 0.88rem; line-height: 1.5; color: var(--muted); margin-bottom: 8px; }
+  .modal ul { padding-left: 18px; margin-bottom: 10px; }
+  .modal .good { color: #4ade80; }
+  .modal .bad { color: #f87171; }
+  .modal-close {
+    float: right; background: none; border: none; color: var(--muted);
+    font-size: 1.4rem; cursor: pointer; line-height: 1;
+  }
+
+  .lightbox {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+    z-index: 200; align-items: center; justify-content: center; padding: 20px;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 90vh; border-radius: 8px; }
+  .lightbox-close {
+    position: absolute; top: 20px; right: 24px; background: none; border: none;
+    color: #fff; font-size: 1.8rem; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="passwordGate">
+  <div class="gate-box">
+    <h2>Enter Password</h2>
+    <p>This page is private. Please enter the password to continue.</p>
+    <input type="password" id="pwInput" placeholder="Password" autocomplete="off">
+    <button id="pwBtn" onclick="checkPassword()">Enter</button>
+    <div class="gate-error" id="pwError"></div>
+    <div class="gate-note">
+      The password may change in the future.<br>
+      If it no longer works, please ask the creator for the updated one.
+    </div>
+  </div>
+</div>
+
+<button class="theme-btn" onclick="toggleTheme()">Theme</button>
+
+<div class="status-dot">
+  <div class="dot" id="dot"></div>
+  <span id="dotText">Checking...</span>
+</div>
+
+<div class="card">
+  <h1>Describe an image</h1>
+
+  <label>Prompt</label>
+  <textarea id="prompt" placeholder="a quiet street at dusk, soft neon lights..."></textarea>
+
+  <div class="row" style="margin-bottom:16px">
+    <button class="tool-btn" onclick="surpriseMe()">🎲 Surprise me</button>
+    <button class="tool-btn" onclick="openHelper()">💡 Prompt Helper</button>
+  </div>
+
+  <div class="neg-toggle" onclick="toggleNeg()">+ Optional negative prompt</div>
+  <div class="neg-box" id="negBox">
+    <textarea id="negative" placeholder="blurry, low quality, text..." style="min-height:60px"></textarea>
+  </div>
+
+  <label>Aspect ratio</label>
+  <div class="row" id="ratios">
+    <button class="ratio-btn active" data-w="1216" data-h="832">3:2</button>
+    <button class="ratio-btn" data-w="1024" data-h="1024">1:1</button>
+    <button class="ratio-btn" data-w="1344" data-h="768">16:9</button>
+    <button class="ratio-btn" data-w="768" data-h="1344">9:16</button>
+    <button class="ratio-btn" data-w="832" data-h="1216">2:3</button>
+  </div>
+
+  <label>LoRAs (optional)</label>
+  <div class="lora-help">LoRAs are small style add-ons (like filters). Tick any you want.</div>
+  <div class="lora-box" id="loraList"></div>
+
+  <div class="active-loras" id="activeLoras"></div>
+
+  <div class="controls">
+    <select class="batch-select" id="batch">
+      <option value="1">1 image</option>
+      <option value="2">2 images</option>
+      <option value="3">3 images</option>
+      <option value="4">4 images</option>
+    </select>
+    <button class="primary" id="gen" onclick="generate()">Generate</button>
+  </div>
+  <div class="hint">Tip: Press <b>Ctrl + Enter</b> to generate</div>
+
+  <div class="status" id="status"></div>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="gallery" id="gallery">
+    <div class="gallery-header">
+      <h2>Your images</h2>
+      <div class="gallery-actions-top">
+        <button onclick="downloadAll()">Download all</button>
+        <button onclick="clearGallery()">Clear all</button>
+      </div>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</div>
+
+<!-- Prompt Helper Modal -->
+<div class="modal-bg" id="helperModal" onclick="if(event.target===this)closeHelper()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeHelper()">×</button>
+    <h2>Prompt Helper</h2>
+    <h3>Good vs Bad prompts</h3>
+    <p><span class="good">Good:</span> “A young woman with long red hair standing on a cliff at sunset, wearing a flowing blue dress, soft golden light, cinematic”</p>
+    <p><span class="bad">Bad:</span> “girl pretty nice background cool”</p>
+    <p>The good one tells the AI <b>who</b>, <b>what they’re doing</b>, <b>where</b>, and <b>how it looks</b>.</p>
+    <h3>What to include for characters</h3>
+    <ul>
+      <li>Age / gender / appearance (hair, eyes, expression)</li>
+      <li>Clothing and style</li>
+      <li>Pose or action</li>
+      <li>Mood</li>
+    </ul>
+    <h3>What to include for the background</h3>
+    <ul>
+      <li>Location</li>
+      <li>Time of day / lighting</li>
+      <li>Atmosphere</li>
+      <li>Camera feel</li>
+    </ul>
+    <h3>Extra tips</h3>
+    <ul>
+      <li>Be specific but not overly long</li>
+      <li>Describe what you want to see</li>
+      <li>Art style words help a lot</li>
+    </ul>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+const SERVER = "http://127.0.0.1:8188";
+const clientId = "simple_" + Math.random().toString(36).slice(2);
+const CORRECT_PASSWORD = "shenron";
+
+let failedAttempts = 0;
+let lockUntil = 0;
+
+function checkPassword() {
+  const input = document.getElementById("pwInput");
+  const error = document.getElementById("pwError");
+  const btn = document.getElementById("pwBtn");
+  const now = Date.now();
+
+  if (now < lockUntil) {
+    const remaining = Math.ceil((lockUntil - now) / 1000);
+    error.textContent = `Too many attempts. Wait ${remaining}s...`;
+    return;
+  }
+
+  const value = input.value.trim();
+
+  if (value === CORRECT_PASSWORD) {
+    document.getElementById("passwordGate").classList.add("hidden");
+    sessionStorage.setItem("auth", "1");
+    return;
+  }
+
+  failedAttempts++;
+  input.value = "";
+
+  if (failedAttempts <= 3) {
+    error.textContent = "Incorrect password";
+  } else if (failedAttempts <= 6) {
+    // First lockout after 3 fails → 5 seconds
+    if (failedAttempts === 4) {
+      lockUntil = Date.now() + 5000;
+      error.textContent = "Too many attempts. Locked for 5 seconds.";
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.disabled = false;
+        error.textContent = "";
+      }, 5000);
+    } else {
+      error.textContent = "Incorrect password";
+    }
+  } else {
+    // After 6 fails → 10 second lockouts
+    lockUntil = Date.now() + 10000;
+    error.textContent = "Too many attempts. Locked for 10 seconds.";
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.disabled = false;
+      error.textContent = "";
+    }, 10000);
+  }
+}
+
+// Allow Enter key on password
+document.getElementById("pwInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") checkPassword();
+});
+
+// If already authenticated this session, skip gate
+if (sessionStorage.getItem("auth") === "1") {
+  document.getElementById("passwordGate").classList.add("hidden");
+}
+
+// ---------- Rest of the original code ----------
+let ws = null;
+let gallery = [];
+let remainingJobs = 0;
+let finishedJobs = 0;
+let currentW = 1216, currentH = 832;
+let genTimes = [];
+let activeLoraStrengths = {};
+let loraPreviews = {};
+
+try {
+  loraPreviews = JSON.parse(localStorage.getItem("loraPreviews") || "{}");
+} catch(e) {}
+
+const LORA_MAP = [
+  { id:"lora_1",  name:"Snofs",              desc:"Natural skin & body detail" },
+  { id:"lora_2",  name:"Realism Engine",     desc:"Strong photorealism boost" },
+  { id:"lora_3",  name:"Real 3D",            desc:"3D rendered look" },
+  { id:"lora_4",  name:"m87",                desc:"Stylised character detail" },
+  { id:"lora_5",  name:"Warm Pastel",        desc:"Soft warm pastel colours" },
+  { id:"lora_6",  name:"Mikkoani",           desc:"Clean anime style" },
+  { id:"lora_7",  name:"Masterpieces",       desc:"Classic painted masterpiece feel" },
+  { id:"lora_13", name:"Flat Anime",         desc:"Flat colourful anime look" },
+  { id:"lora_14", name:"Cartoon Ladies",     desc:"Stylised cartoon women" },
+  { id:"lora_15", name:"Nixeu",              desc:"Soft detailed illustration style" },
+  { id:"lora_16", name:"Syake Mayusan",      desc:"Delicate anime aesthetic" },
+  { id:"lora_17", name:"Alt Girl",           desc:"Alternative / indie girl look" },
+  { id:"lora_18", name:"Anime Char Sheet",   desc:"Clean character sheet style" },
+  { id:"lora_19", name:"BNN 3D",             desc:"Soft 3D character render" },
+  { id:"lora_21", name:"Cyberpunk",          desc:"Neon cyberpunk atmosphere" },
+  { id:"lora_22", name:"Digital Painting",   desc:"Digital illustration style" },
+  { id:"lora_24", name:"Flat Illustration",  desc:"Clean flat vector-like art" },
+  { id:"lora_25", name:"Rella",              desc:"Soft painterly anime" },
+  { id:"lora_26", name:"Marvel Spray",       desc:"Comic / spray-paint style" },
+  { id:"lora_27", name:"Niji Sweet Spot",    desc:"Soft detailed anime (Niji-like)" },
+  { id:"lora_28", name:"Overwatch Cinematic",desc:"Cinematic game-art style" },
+  { id:"lora_29", name:"Greg Rutkowski",     desc:"Fantasy oil-painting style" },
+  { id:"lora_30", name:"krNiji",             desc:"Another strong anime look" },
+  { id:"lora_31", name:"Onitokyo",           desc:"Japanese urban / street style" },
+  { id:"lora_32", name:"AC Raw",             desc:"Clean raw aesthetic" },
+  { id:"lora_33", name:"Black Whiplash",     desc:"Dark stylish character look" },
+  { id:"lora_34", name:"Picturd",            desc:"Stylised pictorial rendering" },
+  { id:"lora_35", name:"Xion Style",         desc:"Distinctive stylised characters" },
+  { id:"lora_36", name:"Fkey",               desc:"Detailed illustrative style" },
+  { id:"lora_37", name:"Future Is Dark",     desc:"Dark futuristic mood" },
+  { id:"lora_38", name:"Noctilume",          desc:"Moody dark lighting" },
+  { id:"lora_39", name:"Zootopia",           desc:"Anthropomorphic / cartoon animal style" },
+  { id:"lora_40", name:"Nyl OW",             desc:"Overwatch-inspired characters" },
+  { id:"lora_41", name:"Void",               desc:"Dark abstract / void aesthetic" },
+  { id:"lora_42", name:"Aesthetic Photo",    desc:"Instagram-aesthetic photography" },
+  { id:"lora_47", name:"Waifu Maker",        desc:"Classic anime waifu style" },
+  { id:"lora_51", name:"Latte Art",          desc:"Soft creamy latte-art look" },
+  { id:"lora_54", name:"Figurine Style",     desc:"3D collectible figure look" },
+  { id:"lora_55", name:"3D Batesz",          desc:"Polished 3D render style" },
+  { id:"lora_56", name:"3D RPG",             desc:"Fantasy RPG 3D characters" },
+  { id:"lora_57", name:"V1 Style",           desc:"Clean general stylisation" },
+  { id:"lora_58", name:"CG Style",           desc:"Polished CG render look" },
+  { id:"lora_59", name:"Mrpopo Anime",       desc:"High-detail anime characters" },
+  { id:"lora_60", name:"DnD Painterly",      desc:"D&D fantasy painting style" },
+  { id:"lora_61", name:"Myth Dark Lines",    desc:"Dark fantasy line-art feel" }
+];
+
+const FUN = ["Warming up the pixels...","Mixing the colours...","Painting the details...","Adding a touch of magic...","Almost there...","Finishing touches...","The AI is concentrating...","Summoning the image..."];
+
+const SURPRISE_PROMPTS = [
+  "a lone samurai standing in a rainy neon alley, cinematic lighting",
+  "cozy cabin in a snowy forest at golden hour, warm windows glowing",
+  "elegant woman in a flowing red dress walking through a field of lavender",
+  "cyberpunk city street at night, reflections on wet pavement, vibrant signs",
+  "ancient library filled with floating books and soft magical light",
+  "a fox sitting on a mossy stone in a misty forest, soft morning light",
+  "astronaut floating above a glowing alien planet, stars reflecting in the helmet",
+  "young witch brewing a potion in a cluttered wooden cabin, candlelight",
+  "knight in shining armour standing on a cliff overlooking a stormy sea",
+  "girl with short blue hair sitting on a rooftop at sunset, city skyline behind her",
+  "steampunk inventor in a workshop filled with brass gears and warm lamps",
+  "black cat walking through a moonlit Japanese garden, soft fog",
+  "ballerina dancing alone on an empty stage under a single spotlight",
+  "old fisherman on a small boat at dawn, calm water and soft pink sky",
+  "warrior woman with silver hair standing in a field of tall grass, wind blowing",
+  "tiny cottage built into a giant tree, glowing windows, fantasy forest"
+];
+
+function playStarSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+    osc.start(now);
+    osc.stop(now + 0.65);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(1760, now + 0.08);
+    gain2.gain.setValueAtTime(0.0001, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.08, now + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.45);
+  } catch(e) {}
+}
+
+function spawnStars() {
+  const stars = ["✦", "✧", "★", "⋆", "✶"];
+  for (let i = 0; i < 14; i++) {
+    const star = document.createElement("div");
+    star.className = "star";
+    star.textContent = stars[Math.floor(Math.random() * stars.length)];
+    const x = window.innerWidth * 0.3 + Math.random() * window.innerWidth * 0.4;
+    const y = window.innerHeight * 0.45 + Math.random() * 80;
+    star.style.left = x + "px";
+    star.style.top = y + "px";
+    star.style.fontSize = (14 + Math.random() * 16) + "px";
+    star.style.color = `hsl(${40 + Math.random()*40}, 90%, ${65 + Math.random()*20}%)`;
+    star.style.animationDuration = (1.1 + Math.random() * 0.6) + "s";
+    star.style.animationDelay = (Math.random() * 0.25) + "s";
+    document.body.appendChild(star);
+    setTimeout(() => star.remove(), 1800);
+  }
+}
+
+function celebrate() {
+  playStarSound();
+  spawnStars();
+}
+
+const loraList = document.getElementById("loraList");
+LORA_MAP.forEach(l => {
+  const div = document.createElement("label");
+  div.className = "lora-item";
+  div.innerHTML = `<input type="checkbox" value="${l.id}" onchange="updateActiveLoras()"><div><div class="lora-name">${l.name}</div><div class="lora-desc">${l.desc}</div></div>`;
+  loraList.appendChild(div);
+});
+
+function updateActiveLoras() {
+  const container = document.getElementById("activeLoras");
+  container.innerHTML = "";
+
+  document.querySelectorAll("#loraList input:checked").forEach(cb => {
+    const id = cb.value;
+    const info = LORA_MAP.find(l => l.id === id);
+    if (!info) return;
+
+    if (activeLoraStrengths[id] === undefined) {
+      activeLoraStrengths[id] = 1.0;
+    }
+
+    const hasPreview = !!loraPreviews[id];
+
+    const card = document.createElement("div");
+    card.className = "active-lora-card";
+    card.innerHTML = `
+      <div class="active-lora-header">
+        <div class="active-lora-name">${info.name}</div>
+        <div class="active-lora-actions">
+          ${hasPreview ? `<button class="preview-btn" onclick="showLoraPreview('${id}')">Preview last image</button>` : ""}
+          <button class="active-lora-off" onclick="turnOffLora('${id}')">Turn off</button>
+        </div>
+      </div>
+      <div class="active-lora-strength">
+        <span>Strength</span>
+        <input type="range" min="0.1" max="1.5" step="0.05" value="${activeLoraStrengths[id]}" 
+               oninput="activeLoraStrengths['${id}']=parseFloat(this.value); this.nextElementSibling.textContent=parseFloat(this.value).toFixed(2)">
+        <span>${activeLoraStrengths[id].toFixed(2)}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function turnOffLora(id) {
+  const cb = document.querySelector(`#loraList input[value="${id}"]`);
+  if (cb) {
+    cb.checked = false;
+    delete activeLoraStrengths[id];
+    updateActiveLoras();
+  }
+}
+
+function showLoraPreview(id) {
+  const url = loraPreviews[id];
+  if (url) openLightbox(url);
+}
+
+document.getElementById("loraList").addEventListener("change", updateActiveLoras);
+
+document.querySelectorAll(".ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentW = +btn.dataset.w;
+    currentH = +btn.dataset.h;
+    saveSettings();
+  };
+});
+
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key === "Enter") {
+    e.preventDefault();
+    generate();
+  }
+});
+
+loadSettings();
+
+function toggleTheme() {
+  document.body.classList.toggle("light");
+  localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
+}
+if (localStorage.getItem("theme") === "light") document.body.classList.add("light");
+
+function saveSettings() {
+  const selected = [];
+  document.querySelectorAll("#loraList input:checked").forEach(cb => selected.push(cb.value));
+  localStorage.setItem("settings", JSON.stringify({
+    batch: document.getElementById("batch").value,
+    loras: selected,
+    strengths: activeLoraStrengths,
+    w: currentW, h: currentH
+  }));
+}
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem("settings") || "{}");
+    if (s.batch) document.getElementById("batch").value = s.batch;
+    if (s.strengths) activeLoraStrengths = s.strengths;
+    if (s.loras) {
+      s.loras.forEach(id => {
+        const cb = document.querySelector(`#loraList input[value="${id}"]`);
+        if (cb) cb.checked = true;
+      });
+      updateActiveLoras();
+    }
+    if (s.w && s.h) {
+      currentW = s.w; currentH = s.h;
+      document.querySelectorAll(".ratio-btn").forEach(b => {
+        b.classList.toggle("active", +b.dataset.w === s.w && +b.dataset.h === s.h);
+      });
+    }
+  } catch(e){}
+}
+document.getElementById("batch").onchange = saveSettings;
+
+async function checkOnline() {
+  const dot = document.getElementById("dot");
+  const text = document.getElementById("dotText");
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(SERVER + "/queue", { signal: controller.signal });
+    clearTimeout(t);
+    const q = await res.json();
+    const running = (q.queue_running || []).length;
+    const pending = (q.queue_pending || []).length;
+    dot.className = "dot online";
+    text.textContent = pending + running > 0 ? `Online · Queue: ${pending + running}` : "Online";
+  } catch {
+    dot.className = "dot offline";
+    text.textContent = "Offline";
+  }
+}
+checkOnline();
+setInterval(checkOnline, 4000);
+
+function toggleNeg() {
+  const box = document.getElementById("negBox");
+  box.style.display = box.style.display === "block" ? "none" : "block";
+}
+function surpriseMe() {
+  document.getElementById("prompt").value = SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
+}
+function openHelper() { document.getElementById("helperModal").classList.add("open"); }
+function closeHelper() { document.getElementById("helperModal").classList.remove("open"); }
+
+function setProgress(p) {
+  const fill = document.getElementById("progressFill");
+  fill.style.width = p + "%";
+  fill.style.background = p < 40 ? "#ef4444" : p < 75 ? "#f59e0b" : "#22c55e";
+}
+
+async function generate() {
+  const promptText = document.getElementById("prompt").value.trim();
+  if (!promptText) { document.getElementById("status").textContent = "Type something first"; return; }
+
+  const count = parseInt(document.getElementById("batch").value) || 1;
+  const btn = document.getElementById("gen");
+  const status = document.getElementById("status");
+  const progressWrap = document.getElementById("progressWrap");
+
+  btn.disabled = true;
+  status.textContent = FUN[0];
+  progressWrap.style.display = "block";
+  setProgress(5);
+  remainingJobs = count;
+  finishedJobs = 0;
+
+  const selected = {};
+  document.querySelectorAll("#loraList input:checked").forEach(cb => {
+    selected[cb.value] = activeLoraStrengths[cb.value] || 1.0;
+  });
+
+  window._currentSingleLora = Object.keys(selected).length === 1 ? Object.keys(selected)[0] : null;
+
+  for (let i = 0; i < count; i++) {
+    queueOne(promptText, selected, count);
+  }
+}
+
+async function queueOne(promptText, selected, total) {
+  const workflow = getBaseWorkflow(promptText);
+  const seed = window._forcedSeed || Math.floor(Math.random() * 1e15);
+  if (window._forcedSeed) window._forcedSeed = null;
+  workflow["12"].inputs.seed = seed;
+  workflow["11"].inputs.width = currentW;
+  workflow["11"].inputs.height = currentH;
+
+  for (const key of Object.keys(workflow["30"].inputs)) {
+    if (key.startsWith("lora_") && selected[key] !== undefined) {
+      workflow["30"].inputs[key].on = true;
+      workflow["30"].inputs[key].strength = selected[key];
+    }
+  }
+
+  try {
+    const start = Date.now();
+    const res = await fetch(SERVER + "/prompt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: workflow, client_id: clientId })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    watchJob(data.prompt_id, total, start, seed, promptText);
+  } catch (e) {
+    document.getElementById("status").textContent = "Error: " + e.message;
+    document.getElementById("gen").disabled = false;
+  }
+}
+
+function watchJob(promptId, total, startTime, seed, promptText) {
+  if (!ws || ws.readyState > 1) ws = new WebSocket(`ws://127.0.0.1:8188/ws?clientId=${clientId}`);
+
+  const handler = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "progress") {
+        const value = msg.data.value || 0;
+        const max = msg.data.max || 1;
+        const overall = ((finishedJobs + value / max) / total) * 100;
+        setProgress(Math.min(95, overall));
+        let eta = "";
+        if (genTimes.length) {
+          const avg = genTimes.reduce((a,b)=>a+b,0) / genTimes.length;
+          const left = Math.max(0, Math.round((avg * (total - finishedJobs - value/max)) / 1000));
+          eta = left > 0 ? ` · ~${left}s left` : "";
+        }
+        document.getElementById("status").textContent = FUN[Math.floor(Math.random()*FUN.length)] + ` (${finishedJobs}/${total})${eta}`;
+      }
+      if (msg.type === "executing" && msg.data.node === null && msg.data.prompt_id === promptId) {
+        setTimeout(() => {
+          loadOneImage(promptId, total, startTime, seed, promptText);
+          ws.removeEventListener("message", handler);
+        }, 900);
+      }
+    } catch(e){}
+  };
+  ws.addEventListener("message", handler);
+}
+
+async function loadOneImage(promptId, total, startTime, seed, promptText) {
+  try {
+    const hist = await fetch(SERVER + "/history/" + promptId).then(r => r.json());
+    const entry = hist[promptId];
+    if (!entry || !entry.outputs) return;
+
+    let imageInfo = null;
+    if (entry.outputs["212"]?.images) imageInfo = entry.outputs["212"].images[0];
+    else {
+      for (const nodeId of Object.keys(entry.outputs)) {
+        const imgs = entry.outputs[nodeId].images;
+        if (imgs?.length) imageInfo = imgs[imgs.length-1];
+      }
+    }
+
+    if (imageInfo) {
+      const url = `${SERVER}/view?filename=${encodeURIComponent(imageInfo.filename)}&subfolder=${encodeURIComponent(imageInfo.subfolder||"")}&type=${imageInfo.type||"output"}`;
+      gallery.unshift({ url, id: Date.now()+Math.random(), seed, prompt: promptText });
+      renderGallery();
+      celebrate();
+
+      if (window._currentSingleLora) {
+        loraPreviews[window._currentSingleLora] = url;
+        localStorage.setItem("loraPreviews", JSON.stringify(loraPreviews));
+        updateActiveLoras();
+      }
+    }
+  } catch(e){}
+
+  genTimes.push(Date.now() - startTime);
+  if (genTimes.length > 8) genTimes.shift();
+
+  finishedJobs++;
+  remainingJobs--;
+
+  if (remainingJobs <= 0) {
+    setProgress(100);
+    document.getElementById("status").textContent = total > 1 ? `Done! ${total} images ready` : "Done!";
+    document.getElementById("gen").disabled = false;
+    if (ws) ws.close();
+  } else {
+    document.getElementById("status").textContent = `Finished ${finishedJobs}/${total}...`;
+  }
+}
+
+function renderGallery() {
+  const el = document.getElementById("gallery");
+  const grid = document.getElementById("galleryGrid");
+  el.style.display = "block";
+  grid.innerHTML = "";
+  gallery.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.className = "gallery-item";
+    div.innerHTML = `
+      <img src="${item.url}" onclick="openLightbox('${item.url}')">
+      <div class="gallery-meta">Seed: ${item.seed}</div>
+      <div class="gallery-btns">
+        <button onclick="reuseSeed(${item.seed})">Reuse seed</button>
+        <button onclick="copyPrompt(\`${item.prompt.replace(/`/g,"")}\`)">Copy prompt</button>
+        <button onclick="downloadUrl('${item.url}')">Download</button>
+        <button class="del" onclick="deleteImage(${i})">Delete</button>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+function deleteImage(i) {
+  gallery.splice(i,1);
+  if (!gallery.length) document.getElementById("gallery").style.display = "none";
+  else renderGallery();
+}
+function clearGallery() {
+  gallery = [];
+  document.getElementById("gallery").style.display = "none";
+}
+function reuseSeed(seed) {
+  window._forcedSeed = seed;
+  document.getElementById("status").textContent = "Seed locked for next generate: " + seed;
+}
+function copyPrompt(text) {
+  navigator.clipboard.writeText(text);
+  document.getElementById("status").textContent = "Prompt copied!";
+}
+function openLightbox(url) {
+  document.getElementById("lightboxImg").src = url;
+  document.getElementById("lightbox").classList.add("open");
+}
+function closeLightbox() {
+  document.getElementById("lightbox").classList.remove("open");
+}
+async function downloadUrl(url) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const obj = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = obj; a.download = "generated.png";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(obj);
+  } catch { const a = document.createElement("a"); a.href = url; a.download = "generated.png"; a.click(); }
+}
+async function downloadAll() {
+  if (!gallery.length) return;
+  const zip = new JSZip();
+  for (let i = 0; i < gallery.length; i++) {
+    try {
+      const res = await fetch(gallery[i].url);
+      const blob = await res.blob();
+      zip.file(`image_${i+1}.png`, blob);
+    } catch(e){}
+  }
+  const content = await zip.generateAsync({ type: "blob" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(content);
+  a.download = "images.zip";
+  a.click();
+}
+
+function getBaseWorkflow(promptText) {
+  const seed = window._forcedSeed || Math.floor(Math.random() * 1e15);
+  if (window._forcedSeed) window._forcedSeed = null;
+
+  return {
+    "1":{"inputs":{"unet_name":"DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors","weight_dtype":"default"},"class_type":"UNETLoader"},
+    "3":{"inputs":{"clip_name":"qwen3vl_4b_fp8_scaled.safetensors","type":"krea2","device":"default"},"class_type":"CLIPLoader"},
+    "11":{"inputs":{"width":1216,"height":832,"batch_size":1},"class_type":"EmptyLatentImage"},
+    "12":{"inputs":{"seed":seed},"class_type":"Seed (rgthree)"},
+    "14":{"inputs":{"images":["123:102",0]},"class_type":"PreviewImage"},
+    "16":{"inputs":{"vae_name":"krea2RealVae_v10.safetensors"},"class_type":"VAELoader"},
+    "30":{"inputs":{
+      "PowerLoraLoaderHeaderWidget":{"type":"PowerLoraLoaderHeaderWidget"},
+      "lora_1":{"on":false,"lora":"Krea\\snofs_krea_v1_1.safetensors","strength":1},
+      "lora_2":{"on":false,"lora":"Krea\\realism_engine_krea2_v3.1.safetensors","strength":1},
+      "lora_3":{"on":false,"lora":"Krea\\real_3d_krea2_loraholic.safetensors","strength":1},
+      "lora_4":{"on":false,"lora":"Krea\\m87_lora_v1.safetensors","strength":0.9},
+      "lora_5":{"on":false,"lora":"Krea\\krea2_warmpastel.safetensors","strength":1},
+      "lora_6":{"on":false,"lora":"Krea\\krea2-mikkoani.safetensors","strength":0.9},
+      "lora_7":{"on":false,"lora":"Krea\\krea2-masterpieces-v51.safetensors","strength":0.8},
+      "lora_8":{"on":false,"lora":"Krea\\PornMaster_Detail_Slider_Krea2_V2.safetensors","strength":8},
+      "lora_9":{"on":false,"lora":"Krea\\MysticXXX_KREA2_v1.safetensors","strength":1},
+      "lora_10":{"on":false,"lora":"Krea\\Krea2_Penis_Bulge_V1_(Degenerator123).safetensors","strength":1},
+      "lora_11":{"on":false,"lora":"Krea\\KNPV3_1.safetensors","strength":1},
+      "lora_12":{"on":false,"lora":"Krea\\IdeoKrea-test.safetensors","strength":1},
+      "lora_13":{"on":false,"lora":"Krea\\Flat_anime_Krea_@.safetensors","strength":0.95},
+      "lora_14":{"on":false,"lora":"Krea\\Cartoon_Ladies_2.safetensors","strength":1},
+      "lora_15":{"on":false,"lora":"Krea\\@nixeu.safetensors","strength":1},
+      "lora_16":{"on":false,"lora":"Krea\\@syakemayusan.safetensors","strength":1},
+      "lora_17":{"on":false,"lora":"Krea\\AltGirlKrea.safetensors","strength":1},
+      "lora_18":{"on":false,"lora":"Krea\\Anime_character_sheet_krea_2.safetensors","strength":1},
+      "lora_19":{"on":false,"lora":"Krea\\BNN3d_c1-st3000.safetensors","strength":0.75},
+      "lora_20":{"on":false,"lora":"Krea\\BSS_AJlbTyIIIKu_Krea2.safetensors","strength":1},
+      "lora_21":{"on":false,"lora":"Krea\\CYPERPUNK_KREA_2.safetensors","strength":1},
+      "lora_22":{"on":false,"lora":"Krea\\DigitalPaiting_Krea2_2_c1-st3000.safetensors","strength":1},
+      "lora_23":{"on":false,"lora":"Krea\\EMN3d-K2_c1-st7000.safetensors","strength":0.5},
+      "lora_24":{"on":false,"lora":"Krea\\Krea2FlatIllustrationV1.safetensors","strength":1},
+      "lora_25":{"on":false,"lora":"Krea\\Krea2Rella_c1-st8000.safetensors","strength":1},
+      "lora_26":{"on":false,"lora":"Krea\\MarvelSpray_Krea2.safetensors","strength":1},
+      "lora_27":{"on":false,"lora":"Krea\\Niji_Sweet_Spot-KREA2_v1.safetensors","strength":1},
+      "lora_28":{"on":false,"lora":"Krea\\Overwatch_Cinematic_Style_Krea_v2_epoch_20.safetensors","strength":1},
+      "lora_29":{"on":false,"lora":"Krea\\greg_rutkowski_v5_krea2.safetensors","strength":1},
+      "lora_30":{"on":false,"lora":"Krea\\krNijiV1.safetensors","strength":1},
+      "lora_31":{"on":false,"lora":"Krea\\krea2_ta86_onitokyo.safetensors","strength":1},
+      "lora_32":{"on":false,"lora":"Krea\\AC_Krea2Raw.safetensors","strength":1},
+      "lora_33":{"on":false,"lora":"Krea\\blackwhiplash_krea2.safetensors","strength":1},
+      "lora_34":{"on":false,"lora":"Krea\\picturd_krea2_v2.safetensors","strength":1},
+      "lora_35":{"on":false,"lora":"Krea\\xionstyle__Krea2__epoch_10.safetensors","strength":1},
+      "lora_36":{"on":false,"lora":"Krea\\Fkey-Krea2_c1-st6000.safetensors","strength":1},
+      "lora_37":{"on":false,"lora":"Krea\\YFG-FutureIsDark-Krea2_1k-v1.safetensors","strength":1},
+      "lora_38":{"on":false,"lora":"Krea\\Noctilume Style.safetensors","strength":1},
+      "lora_39":{"on":false,"lora":"Krea\\zootopia_Krea2Raw.safetensors","strength":1},
+      "lora_40":{"on":false,"lora":"Krea\\Nyl2_OW_Krea_v2_epoch_10.safetensors","strength":1},
+      "lora_41":{"on":false,"lora":"Krea\\k2-void_0_c1-st4000.safetensors","strength":1},
+      "lora_42":{"on":false,"lora":"Krea\\aesthetic_photo-v1_krea2.safetensors","strength":1},
+      "lora_43":{"on":false,"lora":"Krea\\krea2_macromastia_clothed.safetensors","strength":1},
+      "lora_44":{"on":false,"lora":"Krea\\krea2_thickness.safetensors","strength":1},
+      "lora_45":{"on":false,"lora":"Krea\\krea2_macromastia_naked.safetensors","strength":1},
+      "lora_46":{"on":false,"lora":"Krea\\krea2_bigger_muscular.safetensors","strength":1},
+      "lora_47":{"on":false,"lora":"Krea\\WaifuMakerKrea2_epoch_9.safetensors","strength":1},
+      "lora_48":{"on":false,"lora":"Krea\\Krea_Breast_Implanter_v2.safetensors","strength":1},
+      "lora_49":{"on":false,"lora":"Krea\\SexyShush_Krea2_v1.safetensors","strength":1},
+      "lora_50":{"on":false,"lora":"Krea\\Krea2_FemaleDraenei.safetensors","strength":1},
+      "lora_51":{"on":false,"lora":"Krea\\latte_art_KREA2_v1.safetensors","strength":1},
+      "lora_52":{"on":false,"lora":"Krea\\krea2_lora_example-000002.safetensors","strength":0.65},
+      "lora_53":{"on":false,"lora":"Krea\\picturd_krea2_v2.safetensors","strength":1},
+      "lora_54":{"on":false,"lora":"Krea\\3D Model Render Figurine Style LoRA - Krea 2 - Professional Collection - TripTrap V1.safetensors","strength":1.5},
+      "lora_55":{"on":false,"lora":"Krea\\3D Style Batesz V1.safetensors","strength":1.15},
+      "lora_56":{"on":false,"lora":"Krea\\3D RPG Style.safetensors","strength":1.2},
+      "lora_57":{"on":false,"lora":"Krea\\V1.safetensors","strength":1.25},
+      "lora_58":{"on":false,"lora":"Krea\\K2_cgStyle_V1_nnegret.safetensors","strength":1.15},
+      "lora_59":{"on":false,"lora":"Krea\\Mrpopo anime full potential.safetensors","strength":1.35},
+      "lora_60":{"on":false,"lora":"Krea\\DnDPainterlyKrea2Raw.safetensors","strength":1},
+      "lora_61":{"on":false,"lora":"Krea\\Krea2MythD4rkL1nes.safetensors","strength":1},
+      "lora_62":{"on":false,"lora":"Krea\\real_3d_krea2_loraholic.safetensors","strength":1},
+      "➕ Add Lora":"","model":["224",0],"clip":["3",0]
+    },"class_type":"Power Lora Loader (rgthree)"},
+    "119":{"inputs":{"value":promptText},"class_type":"PrimitiveStringMultiline"},
+    "121":{"inputs":{"value":false},"class_type":"PrimitiveBoolean"},
+    "122":{"inputs":{"value":false},"class_type":"PrimitiveBoolean"},
+    "129":{"inputs":{"value":""},"class_type":"PrimitiveStringMultiline"},
+    "158":{"inputs":{"images":["157:148",0]},"class_type":"PreviewImage"},
+    "164":{"inputs":{"images":["158",0]},"class_type":"PreviewImage"},
+    "169":{"inputs":{"images":["158",0]},"class_type":"PreviewImage"},
+    "211":{"inputs":{"value":-350696500598455},"class_type":"PrimitiveInt"},
+    "212":{"inputs":{"filename":"%time_%basemodelname_%seed","path":"%basemodelname","extension":"png","lossless_webp":true,"quality_jpeg_or_webp":100,"optimize_png":false,"embed_workflow":true,"save_workflow_as_json":false,"counter":0,"time_format":"%Y-%m-%d-%H%M%S","show_preview":false,"images":["164",0],"metadata":["213",0]},"class_type":"Image Saver Simple"},
+    "213":{"inputs":{"modelname":"Kreav2(new)","positive":["123:115",0],"negative":"unknown","width":["123:221",0],"height":["123:221",1],"seed_value":["12",0],"steps":8,"cfg":1,"sampler_name":"","scheduler_name":"normal","denoise":1,"clip_skip":0,"additional_hashes":"","download_civitai_data":true,"easy_remix":true,"custom":""},"class_type":"Image Saver Metadata"},
+    "224":{"inputs":{"unet_name":"DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors","weight_dtype":"default","model_type":"krea2","on_the_fly_quantization":false,"enable_convrot":true,"lora_mode":"None"},"class_type":"OTUNetLoaderW8A8"},
+    "123:116":{"inputs":{"switch":["121",0],"on_false":["119",0],"on_true":["123:112",0]},"class_type":"ComfySwitchNode"},
+    "123:6":{"inputs":{"seed":["12",0],"steps":8,"cfg":1,"sampler_name":"euler","scheduler":"linear_quadratic","denoise":1,"model":["123:189",0],"positive":["123:8",0],"negative":["123:29",0],"latent_image":["11",0]},"class_type":"KSampler"},
+    "123:8":{"inputs":{"text":["123:115",0],"clip":["30",1]},"class_type":"CLIPTextEncode"},
+    "123:29":{"inputs":{"conditioning":["123:8",0]},"class_type":"ConditioningZeroOut"},
+    "123:189":{"inputs":{"shift":4,"model":["30",0]},"class_type":"ModelSamplingAuraFlow"},
+    "123:113":{"inputs":{"string_a":["123:114",0],"string_b":["119",0],"delimiter":""},"class_type":"StringConcatenate"},
+    "123:117":{"inputs":{"string_a":["123:116",0],"string_b":["129",0],"delimiter":", "},"class_type":"StringConcatenate"},
+    "123:118":{"inputs":{"switch":["122",0],"on_false":["123:116",0],"on_true":["123:117",0]},"class_type":"ComfySwitchNode"},
+    "123:114":{"inputs":{"value":"Role: Autonomous prompt expander for a vision-language model.\nTask: Convert brief input into a fluid 7-9 sentence paragraph mirroring exact training data formats.\n\nCRITICAL RULES:\n- Zero Conversation: Output ONLY the descriptive paragraph. No intros, no meta-text, no regurgitation of rules.\n- Absolute Autonomy: If input is short/vague, hallucinate ALL missing details. NEVER ask for details.\n- Strictly Optical: Describe ONLY visible pixels. ZERO invisible senses (smells, sounds, temperature) or narrative conclusions.\n- Mandatory Sequence: \n1) Subject & Action (use \"naked\"/\"nude\" if unclothed), \n2) Traits & Attire (assign age strictly as \"18-years-old\", \"25-years-old\" etc.), \n3) Setting & Background, \n4) Lighting & Dominant Colors, \n5) Camera Angle, \n6-9) Optical Micro-Details (textures, shadows).\n- Banned Vocabulary: scent, smell, fragrance, sound, hears, feels, striking, embodies, personifying, narrative, masterpiece, hyper-realistic, realistic, 4k, possesses.\n\nEXAMPLE INPUT:\nwoman on bed in a room. she is dressed\n\nEXAMPLE OUTPUT:\nA 25-years-old woman sits on the edge of a bed, leaning forward slightly with her hands resting on her knees. She wears a faded oversized band t-shirt and ripped black denim shorts, her dark hair pulled into a bun. The bedroom behind her is cluttered with clothes scattered across a wooden floor and posters peeling off the walls. The camera captures her in a medium-wide shot from a slightly high angle, emphasizing the clutter around her feet. A silver ring catches a glint of light on her right hand. The bedsheets are crumpled, showing tight folds and heavy creases where she sits.\n\nNow, process the following input. Output ONLY the final visual description paragraph.\n\nUSER'S INPUT:"},"class_type":"PrimitiveStringMultiline"},
+    "123:112":{"inputs":{"prompt":["123:113",0],"max_length":512,"sampling_mode":"on","sampling_mode.temperature":0.7,"sampling_mode.top_k":64,"sampling_mode.top_p":0.95,"sampling_mode.min_p":0.05,"sampling_mode.repetition_penalty":1.05,"sampling_mode.seed":["211",0],"sampling_mode.presence_penalty":0,"thinking":false,"use_default_template":true,"clip":["3",0]},"class_type":"TextGenerate"},
+    "123:115":{"inputs":{"source":["123:118",0]},"class_type":"PreviewAny"},
+    "123:102":{"inputs":{"samples":["123:6",0],"vae":["16",0]},"class_type":"VAEDecode"},
+    "123:221":{"inputs":{"image":["123:102",0]},"class_type":"GetImageSize"},
+    "157:144":{"inputs":{"image":["157:146",0]},"class_type":"GetImageSize+"},
+    "157:145":{"inputs":{"upscale_model":["157:142",0],"image":["14",0]},"class_type":"ImageUpscaleWithModel"},
+    "157:151":{"inputs":{"width":["157:144",0],"height":["157:144",1],"interpolation":"lanczos","method":"fill / crop","condition":"always","multiple_of":64,"image":["157:146",0]},"class_type":"ImageResize+"},
+    "157:153":{"inputs":{"expression":"a/4","a":["157:154",0]},"class_type":"MathExpression|pysssss"},
+    "157:150":{"inputs":{"seed":204174663826118,"steps":3,"cfg":1,"sampler_name":"euler","scheduler":"sgm_uniform","denoise":0.75,"model":["157:155",0],"positive":["123:8",0],"negative":["123:29",0],"latent_image":["157:149",0]},"class_type":"KSampler"},
+    "157:149":{"inputs":{"pixels":["157:151",0],"vae":["16",0]},"class_type":"VAEEncode"},
+    "157:148":{"inputs":{"samples":["157:150",0],"vae":["16",0]},"class_type":"VAEDecode"},
+    "157:155":{"inputs":{"shift":0.8,"model":["30",0]},"class_type":"ModelSamplingAuraFlow"},
+    "157:154":{"inputs":{"value":2},"class_type":"PrimitiveFloat"},
+    "157:142":{"inputs":{"model_name":"4x-UltraSharp.pth"},"class_type":"UpscaleModelLoader"},
+    "157:146":{"inputs":{"upscale_method":"lanczos","scale_by":["157:153",1],"image":["157:145",0]},"class_type":"ImageScaleBy"}
+  };
+}
+</script>
+</body>
+</html>

@@ -340,17 +340,32 @@
     <textarea id="negative" placeholder="blurry, low quality, text..." style="min-height:60px"></textarea>
   </div>
 
+  <label>Checkpoint</label>
+  <div class="row" id="checkpoints">
+    <button class="ratio-btn active" data-ckpt="DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors">Dasiwa</button>
+    <button class="ratio-btn" data-ckpt="moodykrea2Mix_v40.safetensors">Moodyv40</button>
+  </div>
+  <div class="lora-help" style="margin-top:-6px;margin-bottom:14px">Choose the base model. Dasiwa = clean turbo look · Moodyv40 = moodier / uncensored mix.</div>
+
   <label>Aspect ratio</label>
   <div class="row" id="ratios">
-    <button class="ratio-btn active" data-w="1216" data-h="832">3:2</button>
-    <button class="ratio-btn" data-w="1024" data-h="1024">1:1</button>
-    <button class="ratio-btn" data-w="1344" data-h="768">16:9</button>
-    <button class="ratio-btn" data-w="768" data-h="1344">9:16</button>
-    <button class="ratio-btn" data-w="832" data-h="1216">2:3</button>
+    <button class="ratio-btn active" data-ratio="3:2">3:2</button>
+    <button class="ratio-btn" data-ratio="1:1">1:1</button>
+    <button class="ratio-btn" data-ratio="16:9">16:9</button>
+    <button class="ratio-btn" data-ratio="9:16">9:16</button>
+    <button class="ratio-btn" data-ratio="2:3">2:3</button>
   </div>
 
+  <label>Resolution</label>
+  <div class="row" id="sizes">
+    <button class="ratio-btn" data-size="small">Small</button>
+    <button class="ratio-btn active" data-size="medium">Medium</button>
+    <button class="ratio-btn" data-size="large">Large</button>
+  </div>
+  <div class="lora-help" id="resHint" style="margin-top:-6px;margin-bottom:14px">1216 × 832 · good balance of quality & speed</div>
+
   <label>LoRAs (optional)</label>
-  <div class="lora-help">LoRAs are small style add-ons (like filters). Tick any you want.</div>
+  <div class="lora-help">LoRAs are small style add-ons (like filters). Tick any you want. If a LoRA needs a trigger word, it will be added to your prompt automatically.</div>
   <div class="lora-box" id="loraList"></div>
 
   <div class="active-loras" id="activeLoras"></div>
@@ -425,6 +440,17 @@ const SERVER = "https://daughters-plains-hood-closes.trycloudflare.com";
 const clientId = "simple_" + Math.random().toString(36).slice(2);
 const CORRECT_PASSWORD = "shenron";
 
+// Safe storage – works even when localStorage is blocked (sandboxed iframe)
+const _memStore = {};
+const store = {
+  get(key) {
+    try { return localStorage.getItem(key); } catch(e) { return _memStore[key] ?? null; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(key, val); } catch(e) { _memStore[key] = val; }
+  }
+};
+
 let failedAttempts = 0;
 let lockUntil = 0;
 
@@ -444,7 +470,7 @@ function checkPassword() {
 
   if (value === CORRECT_PASSWORD) {
     document.getElementById("passwordGate").classList.add("hidden");
-    localStorage.setItem("auth", "1");
+    store.set("auth", "1");
     return;
   }
 
@@ -484,7 +510,7 @@ document.getElementById("pwInput").addEventListener("keydown", e => {
 });
 
 // If already authenticated on this browser, skip gate
-if (localStorage.getItem("auth") === "1") {
+if (store.get("auth") === "1") {
   document.getElementById("passwordGate").classList.add("hidden");
 }
 
@@ -494,60 +520,98 @@ let gallery = [];
 let remainingJobs = 0;
 let finishedJobs = 0;
 let currentW = 1216, currentH = 832;
+let currentRatio = "3:2";
+let currentSize = "medium";
+let currentCheckpoint = "DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors";
 let genTimes = [];
 let activeLoraStrengths = {};
 let loraPreviews = {};
 
+// Base dimensions (medium). Small/large are scaled & snapped to multiples of 64.
+const RATIO_BASE = {
+  "3:2":  [1216, 832],
+  "1:1":  [1024, 1024],
+  "16:9": [1344, 768],
+  "9:16": [768, 1344],
+  "2:3":  [832, 1216]
+};
+const SIZE_SCALE = { small: 0.75, medium: 1.0, large: 1.25 };
+const SIZE_LABELS = {
+  small:  "faster · lower VRAM",
+  medium: "good balance of quality & speed",
+  large:  "higher detail · needs more VRAM"
+};
+
+function snap64(n) {
+  return Math.max(64, Math.round(n / 64) * 64);
+}
+
+function applyResolution() {
+  const base = RATIO_BASE[currentRatio] || [1216, 832];
+  const scale = SIZE_SCALE[currentSize] || 1;
+  currentW = snap64(base[0] * scale);
+  currentH = snap64(base[1] * scale);
+  const hint = document.getElementById("resHint");
+  if (hint) {
+    hint.textContent = `${currentW} × ${currentH} · ${SIZE_LABELS[currentSize] || ""}`;
+  }
+}
+
 try {
-  loraPreviews = JSON.parse(localStorage.getItem("loraPreviews") || "{}");
+  loraPreviews = JSON.parse(store.get("loraPreviews") || "{}");
 } catch(e) {}
 
+// trigger: optional string/array that gets auto-appended to the prompt when the LoRA is enabled
 const LORA_MAP = [
-  { id:"lora_1",  name:"Snofs",              desc:"Natural skin & body detail" },
-  { id:"lora_2",  name:"Realism Engine",     desc:"Strong photorealism boost" },
-  { id:"lora_3",  name:"Real 3D",            desc:"3D rendered look" },
-  { id:"lora_4",  name:"m87",                desc:"Stylised character detail" },
-  { id:"lora_5",  name:"Warm Pastel",        desc:"Soft warm pastel colours" },
-  { id:"lora_6",  name:"Mikkoani",           desc:"Clean anime style" },
-  { id:"lora_7",  name:"Masterpieces",       desc:"Classic painted masterpiece feel" },
-  { id:"lora_13", name:"Flat Anime",         desc:"Flat colourful anime look" },
-  { id:"lora_14", name:"Cartoon Ladies",     desc:"Stylised cartoon women" },
-  { id:"lora_15", name:"Nixeu",              desc:"Soft detailed illustration style" },
-  { id:"lora_16", name:"Syake Mayusan",      desc:"Delicate anime aesthetic" },
-  { id:"lora_17", name:"Alt Girl",           desc:"Alternative / indie girl look" },
-  { id:"lora_18", name:"Anime Char Sheet",   desc:"Clean character sheet style" },
-  { id:"lora_19", name:"BNN 3D",             desc:"Soft 3D character render" },
-  { id:"lora_21", name:"Cyberpunk",          desc:"Neon cyberpunk atmosphere" },
-  { id:"lora_22", name:"Digital Painting",   desc:"Digital illustration style" },
-  { id:"lora_24", name:"Flat Illustration",  desc:"Clean flat vector-like art" },
-  { id:"lora_25", name:"Rella",              desc:"Soft painterly anime" },
-  { id:"lora_26", name:"Marvel Spray",       desc:"Comic / spray-paint style" },
-  { id:"lora_27", name:"Niji Sweet Spot",    desc:"Soft detailed anime (Niji-like)" },
-  { id:"lora_28", name:"Overwatch Cinematic",desc:"Cinematic game-art style" },
-  { id:"lora_29", name:"Greg Rutkowski",     desc:"Fantasy oil-painting style" },
-  { id:"lora_30", name:"krNiji",             desc:"Another strong anime look" },
-  { id:"lora_31", name:"Onitokyo",           desc:"Japanese urban / street style" },
-  { id:"lora_32", name:"AC Raw",             desc:"Clean raw aesthetic" },
-  { id:"lora_33", name:"Black Whiplash",     desc:"Dark stylish character look" },
-  { id:"lora_34", name:"Picturd",            desc:"Stylised pictorial rendering" },
-  { id:"lora_35", name:"Xion Style",         desc:"Distinctive stylised characters" },
-  { id:"lora_36", name:"Fkey",               desc:"Detailed illustrative style" },
-  { id:"lora_37", name:"Future Is Dark",     desc:"Dark futuristic mood" },
-  { id:"lora_38", name:"Noctilume",          desc:"Moody dark lighting" },
-  { id:"lora_39", name:"Zootopia",           desc:"Anthropomorphic / cartoon animal style" },
-  { id:"lora_40", name:"Nyl OW",             desc:"Overwatch-inspired characters" },
-  { id:"lora_41", name:"Void",               desc:"Dark abstract / void aesthetic" },
-  { id:"lora_42", name:"Aesthetic Photo",    desc:"Instagram-aesthetic photography" },
-  { id:"lora_47", name:"Waifu Maker",        desc:"Classic anime waifu style" },
-  { id:"lora_51", name:"Latte Art",          desc:"Soft creamy latte-art look" },
-  { id:"lora_54", name:"Figurine Style",     desc:"3D collectible figure look" },
-  { id:"lora_55", name:"3D Batesz",          desc:"Polished 3D render style" },
-  { id:"lora_56", name:"3D RPG",             desc:"Fantasy RPG 3D characters" },
-  { id:"lora_57", name:"V1 Style",           desc:"Clean general stylisation" },
-  { id:"lora_58", name:"CG Style",           desc:"Polished CG render look" },
-  { id:"lora_59", name:"Mrpopo Anime",       desc:"High-detail anime characters" },
-  { id:"lora_60", name:"DnD Painterly",      desc:"D&D fantasy painting style" },
-  { id:"lora_61", name:"Myth Dark Lines",    desc:"Dark fantasy line-art feel" }
+  { id:"lora_1",  name:"Snofs",              desc:"Natural skin & body detail (NSFW-friendly realism)", trigger:"" },
+  { id:"lora_2",  name:"Realism Engine",     desc:"Strong photorealism boost", trigger:"" },
+  { id:"lora_3",  name:"Real 3D",            desc:"3D rendered look", trigger:"" },
+  { id:"lora_4",  name:"m87",                desc:"Stylised character detail", trigger:"" },
+  { id:"lora_5",  name:"Warm Pastel",        desc:"Soft warm pastel colours", trigger:"" },
+  { id:"lora_6",  name:"Mikkoani",           desc:"Clean anime style", trigger:"" },
+  { id:"lora_7",  name:"Masterpieces",       desc:"Classic painted masterpiece feel", trigger:"" },
+  { id:"lora_13", name:"Flat Anime",         desc:"Flat colourful anime look", trigger:"" },
+  { id:"lora_14", name:"Cartoon Ladies",     desc:"Stylised cartoon women", trigger:"" },
+  { id:"lora_15", name:"Nixeu",              desc:"Soft detailed illustration style", trigger:"" },
+  { id:"lora_16", name:"Syake Mayusan",      desc:"Delicate anime aesthetic", trigger:"" },
+  { id:"lora_17", name:"Alt Girl",           desc:"Alternative / indie girl look", trigger:"" },
+  { id:"lora_18", name:"Anime Char Sheet",   desc:"Clean character sheet style", trigger:"" },
+  { id:"lora_19", name:"BNN 3D",             desc:"Soft 3D character render", trigger:"" },
+  { id:"lora_20", name:"BSS Style",          desc:"Soft illustrative character style", trigger:"" },
+  { id:"lora_21", name:"Cyberpunk",          desc:"Neon cyberpunk atmosphere", trigger:"" },
+  { id:"lora_22", name:"Digital Painting",   desc:"Digital illustration style", trigger:"" },
+  { id:"lora_23", name:"EMN 3D",             desc:"Soft 3D / rendered character look", trigger:"" },
+  { id:"lora_24", name:"Flat Illustration",  desc:"Clean flat vector-like art", trigger:"" },
+  { id:"lora_25", name:"Rella",              desc:"Soft painterly anime", trigger:"" },
+  { id:"lora_26", name:"Marvel Spray",       desc:"Comic / spray-paint style", trigger:"" },
+  { id:"lora_27", name:"Niji Sweet Spot",    desc:"Soft detailed anime (Niji-like)", trigger:"" },
+  { id:"lora_28", name:"Overwatch Cinematic",desc:"Cinematic game-art style", trigger:"" },
+  { id:"lora_29", name:"Greg Rutkowski",     desc:"Fantasy oil-painting style", trigger:"" },
+  { id:"lora_30", name:"krNiji",             desc:"Another strong anime look", trigger:"" },
+  { id:"lora_31", name:"Onitokyo",           desc:"Japanese urban / street style", trigger:"" },
+  { id:"lora_32", name:"AC Raw",             desc:"Clean raw aesthetic", trigger:"" },
+  { id:"lora_33", name:"Black Whiplash",     desc:"Dark stylish character look", trigger:"" },
+  { id:"lora_34", name:"Picturd",            desc:"Stylised pictorial rendering", trigger:"" },
+  { id:"lora_35", name:"Xion Style",         desc:"Distinctive stylised characters", trigger:"" },
+  { id:"lora_36", name:"Fkey",               desc:"Detailed illustrative style", trigger:"" },
+  { id:"lora_37", name:"Future Is Dark",     desc:"Dark futuristic mood", trigger:"" },
+  { id:"lora_38", name:"Noctilume",          desc:"Moody dark lighting", trigger:"" },
+  { id:"lora_39", name:"Zootopia",           desc:"Anthropomorphic / cartoon animal style", trigger:"" },
+  { id:"lora_40", name:"Nyl OW",             desc:"Overwatch-inspired characters", trigger:"" },
+  { id:"lora_41", name:"Void",               desc:"Dark abstract / void aesthetic", trigger:"" },
+  { id:"lora_42", name:"Aesthetic Photo",    desc:"Instagram-aesthetic photography", trigger:"" },
+  { id:"lora_47", name:"Waifu Maker",        desc:"Classic anime waifu style", trigger:"" },
+  { id:"lora_51", name:"Latte Art",          desc:"Soft creamy latte-art look", trigger:"" },
+  { id:"lora_52", name:"Krea Example",       desc:"General Krea2 style example LoRA", trigger:"" },
+  { id:"lora_54", name:"Figurine Style",     desc:"3D collectible figure look", trigger:"" },
+  { id:"lora_55", name:"3D Batesz",          desc:"Polished 3D render style", trigger:"" },
+  { id:"lora_56", name:"3D RPG",             desc:"Fantasy RPG 3D characters", trigger:"" },
+  { id:"lora_57", name:"V1 Style",           desc:"Clean general stylisation", trigger:"" },
+  { id:"lora_58", name:"CG Style",           desc:"Polished CG render look", trigger:"" },
+  { id:"lora_59", name:"Mrpopo Anime",       desc:"High-detail anime characters", trigger:"" },
+  { id:"lora_60", name:"DnD Painterly",      desc:"D&D fantasy painting style", trigger:"" },
+  { id:"lora_61", name:"Myth Dark Lines",    desc:"Dark fantasy line-art feel", trigger:"" },
+  { id:"lora_62", name:"Real 3D (alt)",      desc:"Alternate Real 3D strength slot", trigger:"" }
 ];
 
 const FUN = ["Warming up the pixels...","Mixing the colours...","Painting the details...","Adding a touch of magic...","Almost there...","Finishing touches...","The AI is concentrating...","Summoning the image..."];
@@ -630,9 +694,46 @@ const loraList = document.getElementById("loraList");
 LORA_MAP.forEach(l => {
   const div = document.createElement("label");
   div.className = "lora-item";
-  div.innerHTML = `<input type="checkbox" value="${l.id}" onchange="updateActiveLoras()"><div><div class="lora-name">${l.name}</div><div class="lora-desc">${l.desc}</div></div>`;
+  const triggerNote = l.trigger ? `<div class="lora-desc" style="color:#4ade80">Trigger: “${l.trigger}” (auto-added)</div>` : "";
+  div.innerHTML = `<input type="checkbox" value="${l.id}" onchange="onLoraToggle('${l.id}', this.checked)"><div><div class="lora-name">${l.name}</div><div class="lora-desc">${l.desc}</div>${triggerNote}</div>`;
   loraList.appendChild(div);
 });
+
+function ensureTriggerInPrompt(trigger) {
+  if (!trigger) return;
+  const ta = document.getElementById("prompt");
+  const current = ta.value;
+  // already present?
+  if (current.toLowerCase().includes(trigger.toLowerCase())) return;
+  // prepend so it has influence
+  ta.value = (current.trim() ? trigger + ", " + current.trim() : trigger);
+}
+
+function removeTriggerFromPrompt(trigger) {
+  if (!trigger) return;
+  const ta = document.getElementById("prompt");
+  // remove exact phrase (with optional trailing comma/space)
+  const re = new RegExp("(^|,\\s*)" + trigger.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(\\s*,)?", "gi");
+  ta.value = ta.value.replace(re, (m, p1, p2) => (p1 === "," || p1.startsWith(",") ? (p2 ? "," : "") : "")).replace(/^,\s*/, "").trim();
+}
+
+function onLoraToggle(id, checked) {
+  const info = LORA_MAP.find(l => l.id === id);
+  if (info && info.trigger) {
+    if (checked) ensureTriggerInPrompt(info.trigger);
+    else {
+      // only remove if no other active lora still needs the same trigger
+      const stillNeeded = [...document.querySelectorAll("#loraList input:checked")]
+        .some(cb => {
+          const other = LORA_MAP.find(l => l.id === cb.value);
+          return other && other.trigger === info.trigger;
+        });
+      if (!stillNeeded) removeTriggerFromPrompt(info.trigger);
+    }
+  }
+  updateActiveLoras();
+  saveSettings();
+}
 
 function updateActiveLoras() {
   const container = document.getElementById("activeLoras");
@@ -648,6 +749,9 @@ function updateActiveLoras() {
     }
 
     const hasPreview = !!loraPreviews[id];
+    const triggerHtml = info.trigger
+      ? `<div style="font-size:0.75rem;color:#4ade80">Trigger “${info.trigger}” is in your prompt</div>`
+      : "";
 
     const card = document.createElement("div");
     card.className = "active-lora-card";
@@ -659,10 +763,11 @@ function updateActiveLoras() {
           <button class="active-lora-off" onclick="turnOffLora('${id}')">Turn off</button>
         </div>
       </div>
+      ${triggerHtml}
       <div class="active-lora-strength">
         <span>Strength</span>
         <input type="range" min="0.1" max="1.5" step="0.05" value="${activeLoraStrengths[id]}" 
-               oninput="activeLoraStrengths['${id}']=parseFloat(this.value); this.nextElementSibling.textContent=parseFloat(this.value).toFixed(2)">
+               oninput="activeLoraStrengths['${id}']=parseFloat(this.value); this.nextElementSibling.textContent=parseFloat(this.value).toFixed(2); saveSettings()">
         <span>${activeLoraStrengths[id].toFixed(2)}</span>
       </div>
     `;
@@ -675,7 +780,7 @@ function turnOffLora(id) {
   if (cb) {
     cb.checked = false;
     delete activeLoraStrengths[id];
-    updateActiveLoras();
+    onLoraToggle(id, false);
   }
 }
 
@@ -684,14 +789,33 @@ function showLoraPreview(id) {
   if (url) openLightbox(url);
 }
 
-document.getElementById("loraList").addEventListener("change", updateActiveLoras);
+// lora toggles handled via onLoraToggle on each checkbox
 
-document.querySelectorAll(".ratio-btn").forEach(btn => {
+document.querySelectorAll("#ratios .ratio-btn").forEach(btn => {
   btn.onclick = () => {
-    document.querySelectorAll(".ratio-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("#ratios .ratio-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    currentW = +btn.dataset.w;
-    currentH = +btn.dataset.h;
+    currentRatio = btn.dataset.ratio;
+    applyResolution();
+    saveSettings();
+  };
+});
+
+document.querySelectorAll("#sizes .ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#sizes .ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentSize = btn.dataset.size;
+    applyResolution();
+    saveSettings();
+  };
+});
+
+document.querySelectorAll("#checkpoints .ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#checkpoints .ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentCheckpoint = btn.dataset.ckpt;
     saveSettings();
   };
 });
@@ -704,26 +828,29 @@ document.addEventListener("keydown", e => {
 });
 
 loadSettings();
+applyResolution();
 
 function toggleTheme() {
   document.body.classList.toggle("light");
-  localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
+  store.set("theme", document.body.classList.contains("light") ? "light" : "dark");
 }
-if (localStorage.getItem("theme") === "light") document.body.classList.add("light");
+if (store.get("theme") === "light") document.body.classList.add("light");
 
 function saveSettings() {
   const selected = [];
   document.querySelectorAll("#loraList input:checked").forEach(cb => selected.push(cb.value));
-  localStorage.setItem("settings", JSON.stringify({
+  store.set("settings", JSON.stringify({
     batch: document.getElementById("batch").value,
     loras: selected,
     strengths: activeLoraStrengths,
-    w: currentW, h: currentH
+    ratio: currentRatio,
+    size: currentSize,
+    checkpoint: currentCheckpoint
   }));
 }
 function loadSettings() {
   try {
-    const s = JSON.parse(localStorage.getItem("settings") || "{}");
+    const s = JSON.parse(store.get("settings") || "{}");
     if (s.batch) document.getElementById("batch").value = s.batch;
     if (s.strengths) activeLoraStrengths = s.strengths;
     if (s.loras) {
@@ -733,10 +860,23 @@ function loadSettings() {
       });
       updateActiveLoras();
     }
-    if (s.w && s.h) {
-      currentW = s.w; currentH = s.h;
-      document.querySelectorAll(".ratio-btn").forEach(b => {
-        b.classList.toggle("active", +b.dataset.w === s.w && +b.dataset.h === s.h);
+    if (s.ratio && RATIO_BASE[s.ratio]) {
+      currentRatio = s.ratio;
+      document.querySelectorAll("#ratios .ratio-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.ratio === s.ratio);
+      });
+    }
+    if (s.size && SIZE_SCALE[s.size]) {
+      currentSize = s.size;
+      document.querySelectorAll("#sizes .ratio-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.size === s.size);
+      });
+    }
+    // legacy: old saves had raw w/h — ignore, applyResolution will set them
+    if (s.checkpoint) {
+      currentCheckpoint = s.checkpoint;
+      document.querySelectorAll("#checkpoints .ratio-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.ckpt === s.checkpoint);
       });
     }
   } catch(e){}
@@ -824,6 +964,14 @@ async function queueOne(promptText, selected, total) {
   workflow["11"].inputs.width = currentW;
   workflow["11"].inputs.height = currentH;
 
+  // Apply selected checkpoint to both loaders
+  if (workflow["1"] && workflow["1"].inputs) {
+    workflow["1"].inputs.unet_name = currentCheckpoint;
+  }
+  if (workflow["224"] && workflow["224"].inputs) {
+    workflow["224"].inputs.unet_name = currentCheckpoint;
+  }
+
   for (const key of Object.keys(workflow["30"].inputs)) {
     if (key.startsWith("lora_") && selected[key] !== undefined) {
       workflow["30"].inputs[key].on = true;
@@ -903,7 +1051,7 @@ async function loadOneImage(promptId, total, startTime, seed, promptText) {
 
       if (window._currentSingleLora) {
         loraPreviews[window._currentSingleLora] = url;
-        localStorage.setItem("loraPreviews", JSON.stringify(loraPreviews));
+        store.set("loraPreviews", JSON.stringify(loraPreviews));
         updateActiveLoras();
       }
     }
@@ -1002,7 +1150,7 @@ function getBaseWorkflow(promptText) {
   if (window._forcedSeed) window._forcedSeed = null;
 
   return {
-    "1":{"inputs":{"unet_name":"DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors","weight_dtype":"default"},"class_type":"UNETLoader"},
+    "1":{"inputs":{"unet_name":currentCheckpoint,"weight_dtype":"default"},"class_type":"UNETLoader"},
     "3":{"inputs":{"clip_name":"qwen3vl_4b_fp8_scaled.safetensors","type":"krea2","device":"default"},"class_type":"CLIPLoader"},
     "11":{"inputs":{"width":1216,"height":832,"batch_size":1},"class_type":"EmptyLatentImage"},
     "12":{"inputs":{"seed":seed},"class_type":"Seed (rgthree)"},
@@ -1084,7 +1232,7 @@ function getBaseWorkflow(promptText) {
     "211":{"inputs":{"value":-350696500598455},"class_type":"PrimitiveInt"},
     "212":{"inputs":{"filename":"%time_%basemodelname_%seed","path":"%basemodelname","extension":"png","lossless_webp":true,"quality_jpeg_or_webp":100,"optimize_png":false,"embed_workflow":true,"save_workflow_as_json":false,"counter":0,"time_format":"%Y-%m-%d-%H%M%S","show_preview":false,"images":["164",0],"metadata":["213",0]},"class_type":"Image Saver Simple"},
     "213":{"inputs":{"modelname":"Kreav2(new)","positive":["123:115",0],"negative":"unknown","width":["123:221",0],"height":["123:221",1],"seed_value":["12",0],"steps":8,"cfg":1,"sampler_name":"","scheduler_name":"normal","denoise":1,"clip_skip":0,"additional_hashes":"","download_civitai_data":true,"easy_remix":true,"custom":""},"class_type":"Image Saver Metadata"},
-    "224":{"inputs":{"unet_name":"DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors","weight_dtype":"default","model_type":"krea2","on_the_fly_quantization":false,"enable_convrot":true,"lora_mode":"None"},"class_type":"OTUNetLoaderW8A8"},
+    "224":{"inputs":{"unet_name":currentCheckpoint,"weight_dtype":"default","model_type":"krea2","on_the_fly_quantization":false,"enable_convrot":true,"lora_mode":"None"},"class_type":"OTUNetLoaderW8A8"},
     "123:116":{"inputs":{"switch":["121",0],"on_false":["119",0],"on_true":["123:112",0]},"class_type":"ComfySwitchNode"},
     "123:6":{"inputs":{"seed":["12",0],"steps":8,"cfg":1,"sampler_name":"euler","scheduler":"linear_quadratic","denoise":1,"model":["123:189",0],"positive":["123:8",0],"negative":["123:29",0],"latent_image":["11",0]},"class_type":"KSampler"},
     "123:8":{"inputs":{"text":["123:115",0],"clip":["30",1]},"class_type":"CLIPTextEncode"},

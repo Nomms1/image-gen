@@ -345,7 +345,7 @@
     <button class="ratio-btn active" data-ckpt="DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors">Dasiwa</button>
     <button class="ratio-btn" data-ckpt="moodykrea2Mix_v40.safetensors">Moodyv40</button>
   </div>
-  <div class="lora-help" style="margin-top:-6px;margin-bottom:14px">Choose the base model. Dasiwa = clean turbo look · Moodyv40 = moodier / uncensored mix.</div>
+  <div class="lora-help" id="ckptHint" style="margin-top:-6px;margin-bottom:14px">Using: DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors</div>
 
   <label>Aspect ratio</label>
   <div class="row" id="ratios">
@@ -816,6 +816,9 @@ document.querySelectorAll("#checkpoints .ratio-btn").forEach(btn => {
     document.querySelectorAll("#checkpoints .ratio-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     currentCheckpoint = btn.dataset.ckpt;
+    const hint = document.getElementById("ckptHint");
+    if (hint) hint.textContent = "Using: " + currentCheckpoint;
+    document.getElementById("status").textContent = "Checkpoint set to " + (currentCheckpoint.includes("moody") ? "Moodyv40" : "Dasiwa");
     saveSettings();
   };
 });
@@ -878,6 +881,8 @@ function loadSettings() {
       document.querySelectorAll("#checkpoints .ratio-btn").forEach(b => {
         b.classList.toggle("active", b.dataset.ckpt === s.checkpoint);
       });
+      const hint = document.getElementById("ckptHint");
+      if (hint) hint.textContent = "Using: " + currentCheckpoint;
     }
   } catch(e){}
 }
@@ -964,13 +969,12 @@ async function queueOne(promptText, selected, total) {
   workflow["11"].inputs.width = currentW;
   workflow["11"].inputs.height = currentH;
 
-  // Apply selected checkpoint to both loaders
+  // Apply selected checkpoint – both Dasiwa & Moody use the same UNET loader
   if (workflow["1"] && workflow["1"].inputs) {
     workflow["1"].inputs.unet_name = currentCheckpoint;
   }
-  if (workflow["224"] && workflow["224"].inputs) {
-    workflow["224"].inputs.unet_name = currentCheckpoint;
-  }
+  // unused quantized loader – remove so it can't fail validation
+  if (workflow["224"]) delete workflow["224"];
 
   for (const key of Object.keys(workflow["30"].inputs)) {
     if (key.startsWith("lora_") && selected[key] !== undefined) {
@@ -981,6 +985,8 @@ async function queueOne(promptText, selected, total) {
 
   try {
     const start = Date.now();
+    const ckptLabel = currentCheckpoint.includes("moody") ? "Moodyv40" : "Dasiwa";
+    document.getElementById("status").textContent = `Queuing (${ckptLabel})...`;
     const res = await fetch(SERVER + "/prompt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1220,7 +1226,7 @@ function getBaseWorkflow(promptText) {
       "lora_60":{"on":false,"lora":"Krea\\DnDPainterlyKrea2Raw.safetensors","strength":1},
       "lora_61":{"on":false,"lora":"Krea\\Krea2MythD4rkL1nes.safetensors","strength":1},
       "lora_62":{"on":false,"lora":"Krea\\real_3d_krea2_loraholic.safetensors","strength":1},
-      "➕ Add Lora":"","model":["224",0],"clip":["3",0]
+      "➕ Add Lora":"","model":["1",0],"clip":["3",0]
     },"class_type":"Power Lora Loader (rgthree)"},
     "119":{"inputs":{"value":promptText},"class_type":"PrimitiveStringMultiline"},
     "121":{"inputs":{"value":false},"class_type":"PrimitiveBoolean"},
@@ -1232,7 +1238,6 @@ function getBaseWorkflow(promptText) {
     "211":{"inputs":{"value":-350696500598455},"class_type":"PrimitiveInt"},
     "212":{"inputs":{"filename":"%time_%basemodelname_%seed","path":"%basemodelname","extension":"png","lossless_webp":true,"quality_jpeg_or_webp":100,"optimize_png":false,"embed_workflow":true,"save_workflow_as_json":false,"counter":0,"time_format":"%Y-%m-%d-%H%M%S","show_preview":false,"images":["164",0],"metadata":["213",0]},"class_type":"Image Saver Simple"},
     "213":{"inputs":{"modelname":"Kreav2(new)","positive":["123:115",0],"negative":"unknown","width":["123:221",0],"height":["123:221",1],"seed_value":["12",0],"steps":8,"cfg":1,"sampler_name":"","scheduler_name":"normal","denoise":1,"clip_skip":0,"additional_hashes":"","download_civitai_data":true,"easy_remix":true,"custom":""},"class_type":"Image Saver Metadata"},
-    "224":{"inputs":{"unet_name":currentCheckpoint,"weight_dtype":"default","model_type":"krea2","on_the_fly_quantization":false,"enable_convrot":true,"lora_mode":"None"},"class_type":"OTUNetLoaderW8A8"},
     "123:116":{"inputs":{"switch":["121",0],"on_false":["119",0],"on_true":["123:112",0]},"class_type":"ComfySwitchNode"},
     "123:6":{"inputs":{"seed":["12",0],"steps":8,"cfg":1,"sampler_name":"euler","scheduler":"linear_quadratic","denoise":1,"model":["123:189",0],"positive":["123:8",0],"negative":["123:29",0],"latent_image":["11",0]},"class_type":"KSampler"},
     "123:8":{"inputs":{"text":["123:115",0],"clip":["30",1]},"class_type":"CLIPTextEncode"},

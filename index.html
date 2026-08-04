@@ -150,15 +150,29 @@
   }
   .ratio-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
   .lora-help { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
+  .lora-search {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 0.9rem;
+    outline: none; margin-bottom: 8px;
+  }
+  .lora-search:focus { border-color: #555; }
+  .lora-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .lora-chip {
+    background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer;
+  }
+  .lora-chip.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
   .lora-box {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 14px; margin-bottom: 14px; max-height: 180px; overflow-y: auto;
+    padding: 10px 14px; margin-bottom: 6px; max-height: 220px; overflow-y: auto;
   }
   .lora-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
   .lora-item:last-child { border-bottom: none; }
+  .lora-item.hidden { display: none; }
   .lora-item input { margin-top: 3px; accent-color: var(--accent); }
   .lora-name { font-weight: 500; }
   .lora-desc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .lora-count { font-size: 0.75rem; color: var(--muted); margin-bottom: 14px; }
 
   .active-loras {
     display: flex;
@@ -366,7 +380,18 @@
 
   <label>LoRAs (optional)</label>
   <div class="lora-help">LoRAs are small style add-ons (like filters). Tick any you want. If a LoRA needs a trigger word, it will be added to your prompt automatically.</div>
+  <input type="text" class="lora-search" id="loraSearch" placeholder="Search LoRAs… e.g. anime, 3d, cyberpunk" oninput="filterLoras()" autocomplete="off">
+  <div class="lora-chips" id="loraChips">
+    <button type="button" class="lora-chip active" data-chip="all" onclick="setLoraChip(this)">All</button>
+    <button type="button" class="lora-chip" data-chip="anime" onclick="setLoraChip(this)">Anime</button>
+    <button type="button" class="lora-chip" data-chip="3d" onclick="setLoraChip(this)">3D</button>
+    <button type="button" class="lora-chip" data-chip="photo" onclick="setLoraChip(this)">Photo / Real</button>
+    <button type="button" class="lora-chip" data-chip="paint" onclick="setLoraChip(this)">Paint / Art</button>
+    <button type="button" class="lora-chip" data-chip="dark" onclick="setLoraChip(this)">Dark / Moody</button>
+    <button type="button" class="lora-chip" data-chip="active" onclick="setLoraChip(this)">Active only</button>
+  </div>
   <div class="lora-box" id="loraList"></div>
+  <div class="lora-count" id="loraCount"></div>
 
   <div class="active-loras" id="activeLoras"></div>
 
@@ -690,14 +715,61 @@ function celebrate() {
   spawnStars();
 }
 
+let currentLoraChip = "all";
+
 const loraList = document.getElementById("loraList");
 LORA_MAP.forEach(l => {
   const div = document.createElement("label");
   div.className = "lora-item";
+  div.dataset.id = l.id;
+  div.dataset.search = (l.name + " " + l.desc + " " + (l.trigger || "")).toLowerCase();
   const triggerNote = l.trigger ? `<div class="lora-desc" style="color:#4ade80">Trigger: “${l.trigger}” (auto-added)</div>` : "";
   div.innerHTML = `<input type="checkbox" value="${l.id}" onchange="onLoraToggle('${l.id}', this.checked)"><div><div class="lora-name">${l.name}</div><div class="lora-desc">${l.desc}</div>${triggerNote}</div>`;
   loraList.appendChild(div);
 });
+
+function setLoraChip(btn) {
+  document.querySelectorAll(".lora-chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  currentLoraChip = btn.dataset.chip;
+  filterLoras();
+}
+
+function filterLoras() {
+  const q = (document.getElementById("loraSearch").value || "").trim().toLowerCase();
+  const chip = currentLoraChip;
+  const chipWords = {
+    all: null,
+    anime: ["anime", "niji", "waifu", "mikko", "rella", "flat anime", "char sheet", "mrpopo", "syake", "nixeu"],
+    "3d": ["3d", "figurine", "batesz", "rpg", "cg style", "bnn", "emn", "real 3d"],
+    photo: ["photo", "realism", "snofs", "aesthetic", "raw", "skin"],
+    paint: ["paint", "masterpiece", "rutkowski", "digital", "illustration", "picturd", "pastel", "latte", "marvel", "dnd", "myth"],
+    dark: ["dark", "void", "noctilume", "future", "black whip", "cyberpunk", "myth"],
+    active: "active"
+  };
+  const words = chipWords[chip];
+  let shown = 0;
+  document.querySelectorAll("#loraList .lora-item").forEach(item => {
+    const text = item.dataset.search || "";
+    const checked = item.querySelector("input")?.checked;
+    let matchQ = !q || text.includes(q);
+    let matchChip = true;
+    if (words === "active") {
+      matchChip = !!checked;
+    } else if (Array.isArray(words)) {
+      matchChip = words.some(w => text.includes(w));
+    }
+    const show = matchQ && matchChip;
+    item.classList.toggle("hidden", !show);
+    if (show) shown++;
+  });
+  const countEl = document.getElementById("loraCount");
+  if (countEl) {
+    const total = LORA_MAP.length;
+    countEl.textContent = shown === total ? `${total} LoRAs` : `Showing ${shown} of ${total}`;
+  }
+}
+filterLoras();
 
 function ensureTriggerInPrompt(trigger) {
   if (!trigger) return;
@@ -732,6 +804,7 @@ function onLoraToggle(id, checked) {
     }
   }
   updateActiveLoras();
+  filterLoras(); // keep "Active only" chip in sync
   saveSettings();
 }
 

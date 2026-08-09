@@ -1529,7 +1529,14 @@ function getAnimaWorkflow(promptText, negText, seed, selected, denoise, imgName)
       "class_type": "KSampler"
     },
     "100": { "inputs": { "samples": ["207", 0], "vae": ["297", 0] }, "class_type": "VAEDecode" },
-    "preview": { "inputs": { "images": ["100", 0] }, "class_type": "PreviewImage" }
+    "preview": { "inputs": { "images": ["100", 0] }, "class_type": "PreviewImage" },
+    "save": {
+      "inputs": {
+        "filename_prefix": "anima",
+        "images": ["100", 0]
+      },
+      "class_type": "SaveImage"
+    }
   };
 
   if (useTurbo) {

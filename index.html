@@ -599,7 +599,7 @@ const LORA_MAP = [
   { id:"lora_14", name:"Cartoon Ladies",     desc:"Stylised cartoon women", trigger:"" },
   { id:"lora_15", name:"Nixeu",              desc:"Soft detailed illustration style", trigger:"" },
   { id:"lora_16", name:"Syake Mayusan",      desc:"Delicate anime aesthetic", trigger:"" },
-  { id:"lora_17", name:"Alt Girl",           desc:"Alternative / indie girl look", trigger:"" },
+  { id:"lora_17", name:"Alt Girl",           desc:"Alternative / e-girl look (v1.5 updated)", trigger:"" },
   { id:"lora_18", name:"Anime Char Sheet",   desc:"Clean character sheet style", trigger:"" },
   { id:"lora_19", name:"BNN 3D",             desc:"Soft 3D character render", trigger:"" },
   { id:"lora_20", name:"BSS Style",          desc:"Soft illustrative character style", trigger:"" },
@@ -636,7 +636,17 @@ const LORA_MAP = [
   { id:"lora_59", name:"Mrpopo Anime",       desc:"High-detail anime characters", trigger:"" },
   { id:"lora_60", name:"DnD Painterly",      desc:"D&D fantasy painting style", trigger:"" },
   { id:"lora_61", name:"Myth Dark Lines",    desc:"Dark fantasy line-art feel", trigger:"" },
-  { id:"lora_62", name:"Real 3D (alt)",      desc:"Alternate Real 3D strength slot", trigger:"" }
+  { id:"lora_62", name:"Real 3D (alt)",      desc:"Alternate Real 3D strength slot", trigger:"" },
+  { id:"lora_63", name:"Fugtrup 3D",         desc:"High-end polished 3D character style", trigger:"fugtrup_style" },
+  { id:"lora_64", name:"Octane Render",      desc:"Cinematic hyper-detail Octane / Unreal look", trigger:"Octane Render" },
+  { id:"lora_65", name:"Zeste Expressions",  desc:"Strong facial expressions (70+ emotions)", trigger:"" },
+  { id:"lora_66", name:"BloomGirls Real",    desc:"Ultra-realism for women (BloomGirls)", trigger:"bl00m" },
+  { id:"lora_67", name:"Pixar Disney 3D",    desc:"Pixar / Disney 3D animation style", trigger:"3dpixar" },
+  { id:"lora_68", name:"Ray Skin Detail",    desc:"Enhanced skin detail (try ~0.5 strength)", trigger:"" },
+  { id:"lora_69", name:"Blizzard Cinematic", desc:"Blizzard / Warcraft cinematic style", trigger:"@wrcrftcnmtc" },
+  { id:"lora_70", name:"AsianMix",           desc:"Asian / East Asian beauty mix", trigger:"asian woman" },
+  { id:"lora_71", name:"TripleView",         desc:"Multi-view character sheet layout", trigger:"" },
+  { id:"lora_72", name:"Shrimp Makeup",      desc:"Makeup styles collection", trigger:"makeup" }
 ];
 
 const FUN = ["Warming up the pixels...","Mixing the colours...","Painting the details...","Adding a touch of magic...","Almost there...","Finishing touches...","The AI is concentrating...","Summoning the image..."];
@@ -740,11 +750,11 @@ function filterLoras() {
   const chip = currentLoraChip;
   const chipWords = {
     all: null,
-    anime: ["anime", "niji", "waifu", "mikko", "rella", "flat anime", "char sheet", "mrpopo", "syake", "nixeu"],
-    "3d": ["3d", "figurine", "batesz", "rpg", "cg style", "bnn", "emn", "real 3d"],
-    photo: ["photo", "realism", "snofs", "aesthetic", "raw", "skin"],
-    paint: ["paint", "masterpiece", "rutkowski", "digital", "illustration", "picturd", "pastel", "latte", "marvel", "dnd", "myth"],
-    dark: ["dark", "void", "noctilume", "future", "black whip", "cyberpunk", "myth"],
+    anime: ["anime", "niji", "waifu", "mikko", "rella", "flat anime", "char sheet", "mrpopo", "syake", "nixeu", "zeste", "asian"],
+    "3d": ["3d", "figurine", "batesz", "rpg", "cg style", "bnn", "emn", "real 3d", "fugtrup", "octane", "pixar", "disney"],
+    photo: ["photo", "realism", "snofs", "aesthetic", "raw", "skin", "bloom", "ray skin", "makeup", "asian"],
+    paint: ["paint", "masterpiece", "rutkowski", "digital", "illustration", "picturd", "pastel", "latte", "marvel", "dnd", "myth", "blizzard", "cinematic"],
+    dark: ["dark", "void", "noctilume", "future", "black whip", "cyberpunk", "myth", "blizzard"],
     active: "active"
   };
   const words = chipWords[chip];
@@ -818,7 +828,8 @@ function updateActiveLoras() {
     if (!info) return;
 
     if (activeLoraStrengths[id] === undefined) {
-      activeLoraStrengths[id] = 1.0;
+      // Ray Skin Detail recommends ~0.5; others default to 1.0
+      activeLoraStrengths[id] = (id === "lora_68") ? 0.5 : 1.0;
     }
 
     const hasPreview = !!loraPreviews[id];
@@ -1253,7 +1264,7 @@ function getBaseWorkflow(promptText) {
       "lora_14":{"on":false,"lora":"Krea\\Cartoon_Ladies_2.safetensors","strength":1},
       "lora_15":{"on":false,"lora":"Krea\\@nixeu.safetensors","strength":1},
       "lora_16":{"on":false,"lora":"Krea\\@syakemayusan.safetensors","strength":1},
-      "lora_17":{"on":false,"lora":"Krea\\AltGirlKrea.safetensors","strength":1},
+      "lora_17":{"on":false,"lora":"Krea\\AltGirlKreaV1.5.safetensors","strength":1},
       "lora_18":{"on":false,"lora":"Krea\\Anime_character_sheet_krea_2.safetensors","strength":1},
       "lora_19":{"on":false,"lora":"Krea\\BNN3d_c1-st3000.safetensors","strength":0.75},
       "lora_20":{"on":false,"lora":"Krea\\BSS_AJlbTyIIIKu_Krea2.safetensors","strength":1},
@@ -1299,6 +1310,16 @@ function getBaseWorkflow(promptText) {
       "lora_60":{"on":false,"lora":"Krea\\DnDPainterlyKrea2Raw.safetensors","strength":1},
       "lora_61":{"on":false,"lora":"Krea\\Krea2MythD4rkL1nes.safetensors","strength":1},
       "lora_62":{"on":false,"lora":"Krea\\real_3d_krea2_loraholic.safetensors","strength":1},
+      "lora_63":{"on":false,"lora":"Krea\\Fugtrup_Krea2_byKonan.safetensors","strength":1},
+      "lora_64":{"on":false,"lora":"Krea\\OctaneRenderedKrea2Raw.safetensors","strength":1},
+      "lora_65":{"on":false,"lora":"Krea\\ZesteExpressionsV26K.safetensors","strength":1},
+      "lora_66":{"on":false,"lora":"Krea\\krea2-bloomgirls-realism-step00004000.safetensors","strength":1},
+      "lora_67":{"on":false,"lora":"Krea\\Pixar_Disney_3D_Style.safetensors","strength":1},
+      "lora_68":{"on":false,"lora":"Krea\\Krea2-Skin detail v1end.safetensors","strength":0.5},
+      "lora_69":{"on":false,"lora":"Krea\\sxz-warcraft-cinematic-krea2-v1_epoch_10.safetensors","strength":1},
+      "lora_70":{"on":false,"lora":"Krea\\hina_krea2Turbo_lora_tqd_v4.0.safetensors","strength":1},
+      "lora_71":{"on":false,"lora":"Krea\\krea2_charactersheet_full_v1.safetensors","strength":1},
+      "lora_72":{"on":false,"lora":"Krea\\shrimp_makeup_style_05.safetensors","strength":1},
       "➕ Add Lora":"","model":["1",0],"clip":["3",0]
     },"class_type":"Power Lora Loader (rgthree)"},
     "119":{"inputs":{"value":promptText},"class_type":"PrimitiveStringMultiline"},

@@ -763,7 +763,12 @@ const ANIMA_LORA_MAP = [
   { id:"a_lora_27", name:"Gothic Neon",          desc:"Gothic neon atmosphere", trigger:"" },
   { id:"a_lora_28", name:"Extreme Size Diff",    desc:"Extreme size difference concepts", trigger:"" },
   { id:"a_lora_29", name:"Wide Shot",            desc:"Wide shot composition", trigger:"" },
-  { id:"a_lora_30", name:"rdbt",                 desc:"rdbt Anima style", trigger:"" }
+  { id:"a_lora_30", name:"rdbt",                 desc:"rdbt Anima style", trigger:"" },
+  { id:"a_lora_31", name:"Fellatrix",            desc:"Fellatrix / GoofyAi style", trigger:"" },
+  { id:"a_lora_32", name:"Anime Artistic",       desc:"Artistic anime look (light)", trigger:"@Art8st" },
+  { id:"a_lora_33", name:"Anime Figure",         desc:"Anime figure / figurine style", trigger:"f1gur3" },
+  { id:"a_lora_34", name:"Disney 3D",            desc:"Disney 3D animation style", trigger:"@disney3d" },
+  { id:"a_lora_35", name:"Pearly Mario",         desc:"Super Mario movie / pearly 3D style", trigger:"" }
 ];
 
 const ANIMA_LORA_FILES = {
@@ -796,7 +801,12 @@ const ANIMA_LORA_FILES = {
   a_lora_27: "Anima\\GothicNeonAnima.safetensors",
   a_lora_28: "Anima\\ExtremeSizeDiff-V3ANIMA_epoch_8.safetensors",
   a_lora_29: "Anima\\wide_shot-anima.safetensors",
-  a_lora_30: "Anima\\rdbt_anima_b1_v0.39.b.safetensors"
+  a_lora_30: "Anima\\rdbt_anima_b1_v0.39.b.safetensors",
+  a_lora_31: "Anima\\fellatrix_style_anima_goofy.safetensors",
+  a_lora_32: "Anima\\Artistic_anime_update_64d32a.safetensors",
+  a_lora_33: "Anima\\AnimeFigure_ANIMA.safetensors",
+  a_lora_34: "Anima\\disney3d-v2-ngai-anima.safetensors",
+  a_lora_35: "Anima\\pearly_mario_galaxy.safetensors"
 };
 
 function currentLoraMap() {
@@ -915,10 +925,10 @@ function filterLoras() {
   const chip = currentLoraChip;
   const chipWords = {
     all: null,
-    anime: ["anime", "niji", "waifu", "mikko", "rella", "flat anime", "char sheet", "mrpopo", "syake", "nixeu", "zeste", "asian"],
-    "3d": ["3d", "figurine", "batesz", "rpg", "cg style", "bnn", "emn", "real 3d", "fugtrup", "octane", "pixar", "disney"],
+    anime: ["anime", "niji", "waifu", "mikko", "rella", "flat anime", "char sheet", "mrpopo", "syake", "nixeu", "zeste", "asian", "artistic", "fellatrix", "figure"],
+    "3d": ["3d", "figurine", "batesz", "rpg", "cg style", "bnn", "emn", "real 3d", "fugtrup", "octane", "pixar", "disney", "mario", "figure", "pearly"],
     photo: ["photo", "realism", "snofs", "aesthetic", "raw", "skin", "bloom", "ray skin", "makeup", "asian"],
-    paint: ["paint", "masterpiece", "rutkowski", "digital", "illustration", "picturd", "pastel", "latte", "marvel", "dnd", "myth", "blizzard", "cinematic"],
+    paint: ["paint", "masterpiece", "rutkowski", "digital", "illustration", "picturd", "pastel", "latte", "marvel", "dnd", "myth", "blizzard", "cinematic", "artistic"],
     dark: ["dark", "void", "noctilume", "future", "black whip", "cyberpunk", "myth", "blizzard"],
     active: "active"
   };
@@ -1521,7 +1531,7 @@ function getAnimaWorkflow(promptText, negText, seed, selected, denoise, imgName)
     "model": modelSource,
     "clip": ["296", 0]
   };
-  for (let i = 1; i <= 30; i++) {
+  for (let i = 1; i <= 35; i++) {
     const id = "a_lora_" + i;
     const file = ANIMA_LORA_FILES[id];
     const on = selected[id] !== undefined;

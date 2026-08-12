@@ -1,806 +1,1564 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gemini Studio Nexus · Ultimate AI Pipeline</title>
-  <style>
-    :root {
-      --bg: #050507;
-      --card: #0e0e12;
-      --border: #21212c;
-      --text: #f4f4f6;
-      --muted: #8b8b9e;
-      --accent: #6366f1;
-      --accent-hover: #4f46e5;
-      --ring: rgba(99, 102, 241, 0.25);
-    }
-    body.light {
-      --bg: #f4f6f9;
-      --card: #ffffff;
-      --border: #d1d5db;
-      --text: #111827;
-      --muted: #4b5563;
-      --accent: #4f46e5;
-      --accent-hover: #4338ca;
-      --ring: rgba(79, 70, 229, 0.2);
-    }
-    body.anima {
-      --bg: #06030d;
-      --card: #0f081c;
-      --border: #261642;
-      --text: #f3e8ff;
-      --muted: #a78bfa;
-      --accent: #a855f7;
-      --accent-hover: #9333ea;
-      --ring: rgba(168, 85, 247, 0.3);
-    }
-    body.anima.light {
-      --bg: #faf5ff;
-      --card: #ffffff;
-      --border: #e9d5ff;
-      --text: #3b0764;
-      --muted: #7e22ce;
-      --accent: #9333ea;
-      --accent-hover: #7e22ce;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generate</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root {
+    --bg: #0c0c0c;
+    --card: #141414;
+    --border: #2a2a2a;
+    --text: #e8e8e8;
+    --muted: #777;
+    --accent: #fff;
+  }
+  body.light {
+    --bg: #f4f4f5;
+    --card: #ffffff;
+    --border: #e4e4e7;
+    --text: #18181b;
+    --muted: #71717a;
+    --accent: #18181b;
+  }
+  body.anima {
+    --bg: #0e0a14;
+    --card: #16101f;
+    --border: #3b2a55;
+    --text: #efe8f8;
+    --muted: #9b8bb8;
+    --accent: #c4a1ff;
+  }
+  body.anima.light {
+    --bg: #f3eef9;
+    --card: #ffffff;
+    --border: #ddd0ef;
+    --text: #1a1028;
+    --muted: #6b5a82;
+    --accent: #6b3fa0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: inherit; }
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 32px 16px;
-      transition: background 0.3s ease, color 0.3s ease;
-    }
+  #passwordGate {
+    position: fixed;
+    inset: 0;
+    background: #0c0c0c;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #passwordGate.hidden { display: none; }
+  .gate-box {
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  .gate-box h2 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .gate-box p {
+    font-size: 0.85rem;
+    color: #777;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+  .gate-box input {
+    width: 100%;
+    background: #0c0c0c;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #eee;
+    font-size: 1rem;
+    outline: none;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .gate-box input:focus { border-color: #555; }
+  .gate-box button {
+    width: 100%;
+    background: #fff;
+    color: #111;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .gate-box button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .gate-error {
+    font-size: 0.8rem;
+    color: #ef4444;
+    margin-top: 10px;
+    min-height: 1.2em;
+  }
+  .gate-note {
+    font-size: 0.75rem;
+    color: #555;
+    margin-top: 18px;
+    line-height: 1.4;
+  }
 
-    .top-bar {
-      position: fixed; top: 16px; left: 24px; right: 24px;
-      display: flex; justify-content: space-between; align-items: center;
-      z-index: 100; pointer-events: none;
-    }
-    .top-bar > * { pointer-events: auto; }
-    .nav-group { display: flex; gap: 10px; align-items: center; }
-    
-    button, select, input {
-      background: var(--card); border: 1px solid var(--border); color: var(--text);
-      border-radius: 10px; padding: 8px 14px; font-size: 0.85rem; cursor: pointer;
-      transition: all 0.2s ease; outline: none;
-    }
-    button:hover { border-color: var(--accent); }
-    button:active { transform: scale(0.98); }
+  .status-dot {
+    position: fixed; top: 18px; right: 18px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.8rem; color: var(--muted); z-index: 100;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; }
+  .dot.online { background: #22c55e; animation: pulse-green 1.6s infinite; }
+  .dot.offline { background: #ef4444; animation: pulse-red 1.6s infinite; }
+  @keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  }
+  @keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  }
+  .theme-btn {
+    position: fixed; top: 18px; left: 18px;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 6px 10px;
+    font-size: 0.8rem; cursor: pointer; z-index: 100;
+  }
+  .engine-label {
+    position: fixed; top: 52px; left: 18px;
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); z-index: 100;
+    pointer-events: none; user-select: none;
+  }
+  body.anima .engine-label { color: var(--accent); }
+  .card { width: 100%; max-width: 720px; }
+  h1 { font-size: 1.25rem; font-weight: 500; margin-bottom: 20px; color: var(--text); }
+  label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  textarea, input[type="text"] {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; color: var(--text); font-size: 0.95rem;
+    outline: none; margin-bottom: 14px; resize: vertical;
+  }
+  textarea { min-height: 90px; }
+  .row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .ratio-btn, .batch-select, .tool-btn {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; cursor: pointer;
+  }
+  .ratio-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .lora-help { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
+  .lora-search {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 0.9rem;
+    outline: none; margin-bottom: 8px;
+  }
+  .lora-search:focus { border-color: #555; }
+  .lora-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .lora-chip {
+    background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer;
+  }
+  .lora-chip.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .lora-box {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 6px; max-height: 220px; overflow-y: auto;
+  }
+  .lora-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
+  .lora-item:last-child { border-bottom: none; }
+  .lora-item.hidden { display: none; }
+  .lora-item input { margin-top: 3px; accent-color: var(--accent); }
+  .lora-name { font-weight: 500; }
+  .lora-desc { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .lora-count { font-size: 0.75rem; color: var(--muted); margin-bottom: 14px; }
 
-    .status-pill {
-      display: flex; align-items: center; gap: 8px; background: var(--card);
-      border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px;
-      font-size: 0.75rem; color: var(--muted);
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
-    .dot.online { background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.5); }
+  .active-loras {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .active-lora-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .active-lora-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .active-lora-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .active-lora-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .active-lora-off, .preview-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .active-lora-off:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+  }
+  .preview-btn:hover {
+    border-color: #22c55e;
+    color: #22c55e;
+  }
+  .active-lora-strength {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .active-lora-strength input {
+    flex: 1;
+  }
+  .active-lora-strength span {
+    min-width: 32px;
+    text-align: right;
+  }
 
-    .container { width: 100%; max-width: 800px; margin-top: 50px; }
-    
-    .panel {
-      background: var(--card); border: 1px solid var(--border); border-radius: 24px;
-      padding: 32px; box-shadow: 0 20px 40px -15px rgba(0,0,0,0.4);
-      margin-bottom: 24px;
-    }
-    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
-    .subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+  .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .controls button { flex: 1; }
+  button.primary {
+    background: var(--accent); color: var(--bg); border: none; border-radius: 12px;
+    padding: 14px; font-size: 1rem; font-weight: 600; cursor: pointer;
+  }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; }
+  .status { font-size: 0.9rem; color: var(--muted); min-height: 1.3em; margin-bottom: 8px; }
+  .progress-wrap { display: none; margin-bottom: 16px; }
+  .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 4px; transition: width 0.3s, background 0.4s; background: #ef4444; }
+  .gallery { margin-top: 24px; display: none; }
+  .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .gallery-header h2 { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+  .gallery-actions-top button {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 6px 10px; font-size: 0.75rem; cursor: pointer; margin-left: 6px;
+  }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .gallery-item { position: relative; border-radius: 10px; overflow: hidden; background: var(--card); }
+  .gallery-item img { width: 100%; display: block; aspect-ratio: 3/2; object-fit: cover; cursor: pointer; }
+  .gallery-meta { padding: 8px; font-size: 0.72rem; color: var(--muted); }
+  .gallery-btns { position: absolute; bottom: 8px; right: 8px; display: flex; gap: 5px; flex-wrap: wrap; }
+  .gallery-btns button {
+    padding: 4px 8px; font-size: 0.7rem; border-radius: 6px;
+    background: rgba(0,0,0,0.75); color: #fff; border: 1px solid #444; cursor: pointer;
+  }
+  .gallery-btns .del { background: rgba(180,30,30,0.85); }
+  .neg-toggle { font-size: 0.8rem; color: var(--muted); cursor: pointer; margin-bottom: 8px; user-select: none; }
+  .neg-box { display: none; margin-bottom: 14px; }
 
-    label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
-    textarea, input[type="text"] {
-      width: 100%; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px 16px; color: var(--text); font-size: 0.95rem;
-      resize: vertical; margin-bottom: 16px;
-    }
-    textarea:focus, input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
-    textarea { min-height: 110px; }
+  .star {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    font-size: 18px;
+    opacity: 1;
+    animation: floatStar 1.4s ease-out forwards;
+    text-shadow: 0 0 6px rgba(255,220,100,0.8);
+  }
+  @keyframes floatStar {
+    0%   { transform: translateY(0) scale(0.4) rotate(0deg); opacity: 0; }
+    15%  { opacity: 1; transform: translateY(-10px) scale(1.1) rotate(20deg); }
+    100% { transform: translateY(-120px) scale(0.6) rotate(60deg); opacity: 0; }
+  }
 
-    .row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-    .row > * { flex: 1; }
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 300; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    max-width: 520px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 24px;
+    color: var(--text);
+  }
+  .modal h2 { font-size: 1.1rem; margin-bottom: 14px; }
+  .modal h3 { font-size: 0.9rem; margin: 16px 0 6px; }
+  .modal p, .modal li { font-size: 0.88rem; line-height: 1.5; color: var(--muted); margin-bottom: 8px; }
+  .modal ul { padding-left: 18px; margin-bottom: 10px; }
+  .modal .good { color: #4ade80; }
+  .modal .bad { color: #f87171; }
+  .modal-close {
+    float: right; background: none; border: none; color: var(--muted);
+    font-size: 1.4rem; cursor: pointer; line-height: 1;
+  }
 
-    .pill-btn {
-      background: var(--bg); border: 1px solid var(--border); color: var(--muted);
-      border-radius: 10px; padding: 10px 14px; font-size: 0.85rem; font-weight: 500;
-      text-align: center; cursor: pointer; flex: 1;
-    }
-    .pill-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-    .slider-group { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; }
-    .slider-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
-    input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
-
-    .dropzone {
-      border: 2px dashed var(--border); border-radius: 12px; padding: 20px;
-      text-align: center; background: var(--bg); color: var(--muted); font-size: 0.85rem;
-      cursor: pointer; margin-bottom: 16px; transition: border-color 0.2s;
-    }
-    .dropzone:hover { border-color: var(--accent); }
-
-    .btn-primary {
-      width: 100%; background: var(--accent); color: #fff; border: none;
-      border-radius: 12px; padding: 14px; font-size: 1rem; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
-    }
-    .btn-primary:hover { background: var(--accent-hover); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .status-text { font-size: 0.85rem; color: var(--muted); margin-top: 14px; text-align: center; min-height: 1.2em; }
-    .progress-bar-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 8px; display: none; }
-    .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s ease; }
-
-    .gallery { display: none; margin-top: 24px; }
-    .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-    .gallery-item { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--bg); }
-    .gallery-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; cursor: pointer; }
-    .gallery-actions { position: absolute; bottom: 8px; right: 8px; display: flex; gap: 6px; }
-    .gallery-actions button { background: rgba(0,0,0,0.7); border: none; color: #fff; padding: 4px 8px; font-size: 0.7rem; border-radius: 6px; }
-
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
-      z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 440px; padding: 24px; }
-    
-    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: none; align-items: center; justify-content: center; }
-    .lightbox.open { display: flex; }
-    .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
-  </style>
+  .lightbox {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+    z-index: 200; align-items: center; justify-content: center; padding: 20px;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 90vh; border-radius: 8px; }
+  .lightbox-close {
+    position: absolute; top: 20px; right: 24px; background: none; border: none;
+    color: #fff; font-size: 1.8rem; cursor: pointer;
+  }
+</style>
 </head>
 <body>
 
-  <div class="top-bar">
-    <div class="nav-group">
-      <button onclick="toggleTheme()">Theme</button>
-      <button onclick="openSettingsModal()">⚙️ Server Setup</button>
+<div id="passwordGate">
+  <div class="gate-box">
+    <h2>Enter Password</h2>
+    <p>This page is private. Please enter the password to continue.</p>
+    <input type="password" id="pwInput" placeholder="Password" autocomplete="off">
+    <button id="pwBtn" onclick="checkPassword()">Enter</button>
+    <div class="gate-error" id="pwError"></div>
+    <div class="gate-note">
+      The password may change in the future.<br>
+      If it no longer works, please ask the creator for the updated one.
     </div>
-    <div class="status-pill">
-      <div class="dot" id="connectionDot"></div>
-      <span id="connectionText">Checking connection...</span>
+  </div>
+</div>
+
+<button class="theme-btn" onclick="toggleTheme()">Theme</button>
+<div class="engine-label" id="engineLabel">Krea</div>
+
+<div class="status-dot">
+  <div class="dot" id="dot"></div>
+  <span id="dotText">Checking...</span>
+</div>
+
+<div class="card">
+  <h1>Describe an image</h1>
+
+  <label>Prompt</label>
+  <textarea id="prompt" placeholder="a quiet street at dusk, soft neon lights..."></textarea>
+
+  <div class="row" style="margin-bottom:16px">
+    <button class="tool-btn" onclick="surpriseMe()">🎲 Surprise me</button>
+    <button class="tool-btn" onclick="openHelper()">💡 Prompt Helper</button>
+  </div>
+
+  <div class="neg-toggle" onclick="toggleNeg()">+ Optional negative prompt</div>
+  <div class="neg-box" id="negBox">
+    <textarea id="negative" placeholder="blurry, low quality, text..." style="min-height:60px"></textarea>
+  </div>
+
+  <label>Engine</label>
+  <div class="row" id="engineRow" style="margin-bottom:14px">
+    <button class="ratio-btn active" data-engine="krea" onclick="setEngine('krea')">Krea</button>
+    <button class="ratio-btn" data-engine="anima" onclick="setEngine('anima')">Anima</button>
+  </div>
+  <div class="lora-help" id="engineHint" style="margin-top:-6px;margin-bottom:14px">Krea · fast turbo detail · natural language prompts</div>
+
+  <label>Checkpoint</label>
+  <div class="row" id="checkpointsKrea">
+    <button class="ratio-btn active" data-ckpt="DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors">Dasiwa</button>
+    <button class="ratio-btn" data-ckpt="moodyKrea2Mix_v40.safetensors">Moodyv40</button>
+  </div>
+  <div class="row" id="checkpointsAnima" style="display:none">
+    <button class="ratio-btn active" data-ckpt="animaMayhem_v10.safetensors">Mayhem</button>
+    <button class="ratio-btn" data-ckpt="waiANIMA_v10Base10.safetensors">WAI</button>
+    <button class="ratio-btn" data-ckpt="JANIMA_v10.safetensors">JANIMA</button>
+    <button class="ratio-btn" data-ckpt="pieModelsAnima_cream.safetensors">Pie Cream</button>
+    <button class="ratio-btn" data-ckpt="reanimate_v20.safetensors">Reanimate</button>
+  </div>
+  <div class="lora-help" id="ckptHint" style="margin-top:-6px;margin-bottom:14px">Using: DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors</div>
+
+  <div id="turboSection" style="display:none">
+    <label>Turbo LoRA</label>
+    <div class="row" id="turboRow">
+      <button class="ratio-btn active" data-turbo="none">None</button>
+      <button class="ratio-btn" data-turbo="v15">Turbo v1.5</button>
+      <button class="ratio-btn" data-turbo="v3">Turbo v3</button>
+      <button class="ratio-btn" data-turbo="v02">Turbo v0.2</button>
+    </div>
+    <div class="lora-help" style="margin-top:-6px;margin-bottom:14px">Turbo = fewer steps · faster. None = full quality (more steps).</div>
+  </div>
+
+  <div id="img2imgSection" style="display:none;margin-bottom:14px">
+    <label>Image to image (optional)</label>
+    <div class="lora-help">Upload a reference. Leave empty for normal text-to-image.</div>
+    <input type="file" id="img2imgFile" accept="image/*" style="width:100%;margin-bottom:10px;font-size:0.85rem;color:var(--muted)">
+    <div id="img2imgPreviewWrap" style="display:none;margin-bottom:10px">
+      <img id="img2imgPreview" style="max-width:180px;border-radius:10px;border:1px solid var(--border);vertical-align:middle">
+      <button type="button" class="tool-btn" style="margin-left:8px" onclick="clearImg2img()">Remove</button>
+    </div>
+    <div id="denoiseWrap" style="display:none">
+      <div class="active-lora-strength">
+        <span>Denoise</span>
+        <input type="range" id="denoiseSlider" min="0.15" max="1" step="0.05" value="0.55" oninput="updateDenoiseLabel()">
+        <span id="denoiseVal">0.55</span>
+      </div>
+      <div class="lora-help" id="denoiseHint">Medium — clear changes, still related to the original</div>
     </div>
   </div>
 
-  <div class="container">
-    <div class="panel">
-      <h1>Gemini Studio Nexus</h1>
-      <p class="subtitle">Unified Anima & Krea Master Pipeline Control Matrix.</p>
-
-      <label>Engine Backend Model</label>
-      <div class="row" id="engineSelection">
-        <button class="pill-btn" data-engine="krea" onclick="setEngine('krea')">Krea Turbo</button>
-        <button class="pill-btn active" data-engine="anima" onclick="setEngine('anima')">Anima Studio</button>
-      </div>
-
-      <label>Prompt Description</label>
-      <textarea id="promptInput" placeholder="Masterpiece, best quality, absurd, cinematic composition..."></textarea>
-
-      <div class="row">
-        <button class="pill-btn" onclick="surprisePrompt()">🎲 Randomize Prompt</button>
-        <button class="pill-btn" onclick="toggleNegativeBox()">+ Negative Prompt</button>
-      </div>
-
-      <div id="negativeContainer" style="display:none; margin-bottom: 16px;">
-        <label>Negative Prompt</label>
-        <textarea id="negativeInput" placeholder="worst quality, low quality, blurry, bad anatomy..." style="min-height: 60px;"></textarea>
-      </div>
-
-      <!-- Img2Img Dynamic Upload Zone -->
-      <label>Pipeline Mode (Text-to-Image / Image-to-Image)</label>
-      <div class="dropzone" id="dropzone" onclick="document.getElementById('imageUpload').click()">
-        <span id="uploadLabel">📁 Click or drop source image here for Img2Img (Optional)</span>
-        <input type="file" id="imageUpload" accept="image/*" style="display:none" onchange="handleImageSelection(this)">
-      </div>
-      <div id="imagePreviewContainer" style="display:none; margin-bottom: 16px; align-items: center; gap: 10px;">
-        <span id="imageFileName" style="font-size: 0.85rem; color: var(--accent);"></span>
-        <button onclick="clearUploadedImage()" style="padding: 2px 8px; font-size: 0.7rem;">Remove Image</button>
-      </div>
-
-      <label>LoRA Extension Module</label>
-      <div class="row">
-        <select id="loraSelect" style="flex: 2;">
-          <option value="none">None (Bypassed)</option>
-        </select>
-      </div>
-
-      <div class="slider-group">
-        <div class="slider-header">
-          <label style="margin:0;">LoRA Injection Weight</label>
-          <span id="weightVal" style="color: var(--text); font-weight: 600;">1.00</span>
-        </div>
-        <input type="range" id="loraWeight" min="0" max="2" step="0.05" value="1.0">
-      </div>
-
-      <label>Aspect Ratio Configuration</label>
-      <div class="row" id="ratioSelection">
-        <button class="pill-btn active" data-ratio="1:1" onclick="setRatio('1:1')">1:1 Square</button>
-        <button class="pill-btn" data-ratio="16:9" onclick="setRatio('16:9')">16:9 Widescreen</button>
-        <button class="pill-btn" data-ratio="9:16" onclick="setRatio('9:16')">9:16 Portrait</button>
-      </div>
-
-      <div style="margin-top: 24px;">
-        <button class="btn-primary" id="generateBtn" onclick="startGeneration()">Execute Generation Pipeline</button>
-      </div>
-
-      <div class="status-text" id="statusText">System standing by.</div>
-      <div class="progress-bar-wrap" id="progressBarWrap">
-        <div class="progress-bar-fill" id="progressBarFill"></div>
-      </div>
-    </div>
-
-    <div class="gallery" id="gallerySection">
-      <div class="gallery-header">
-        <label>Generated Gallery Output</label>
-        <button onclick="clearGallery()">Purge Gallery</button>
-      </div>
-      <div class="gallery-grid" id="galleryGrid"></div>
-    </div>
+  <label>Aspect ratio</label>
+  <div class="row" id="ratios">
+    <button class="ratio-btn active" data-ratio="3:2">3:2</button>
+    <button class="ratio-btn" data-ratio="1:1">1:1</button>
+    <button class="ratio-btn" data-ratio="16:9">16:9</button>
+    <button class="ratio-btn" data-ratio="9:16">9:16</button>
+    <button class="ratio-btn" data-ratio="2:3">2:3</button>
   </div>
 
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal">
-      <h2 style="font-size: 1.2rem; margin-bottom: 12px;">ComfyUI Host Configuration</h2>
-      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px;">Set your active local node or remote tunnel endpoint.</p>
-      <label>Server Endpoint URL</label>
-      <input type="text" id="serverUrlInput" placeholder="http://127.0.0.1:8188">
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button onclick="closeSettingsModal()">Cancel</button>
-        <button class="pill-btn active" onclick="saveServerSettings()">Save & Reconnect</button>
+  <label>Resolution</label>
+  <div class="row" id="sizes">
+    <button class="ratio-btn" data-size="small">Small</button>
+    <button class="ratio-btn active" data-size="medium">Medium</button>
+    <button class="ratio-btn" data-size="large">Large</button>
+  </div>
+  <div class="lora-help" id="resHint" style="margin-top:-6px;margin-bottom:14px">1216 × 832 · good balance of quality & speed</div>
+
+  <label>LoRAs (optional)</label>
+  <div class="lora-help">LoRAs are small style add-ons (like filters). Tick any you want. If a LoRA needs a trigger word, it will be added to your prompt automatically.</div>
+  <input type="text" class="lora-search" id="loraSearch" placeholder="Search LoRAs… e.g. anime, 3d, cyberpunk" oninput="filterLoras()" autocomplete="off">
+  <div class="lora-chips" id="loraChips">
+    <button type="button" class="lora-chip active" data-chip="all" onclick="setLoraChip(this)">All</button>
+    <button type="button" class="lora-chip" data-chip="anime" onclick="setLoraChip(this)">Anime</button>
+    <button type="button" class="lora-chip" data-chip="3d" onclick="setLoraChip(this)">3D</button>
+    <button type="button" class="lora-chip" data-chip="photo" onclick="setLoraChip(this)">Photo / Real</button>
+    <button type="button" class="lora-chip" data-chip="paint" onclick="setLoraChip(this)">Paint / Art</button>
+    <button type="button" class="lora-chip" data-chip="dark" onclick="setLoraChip(this)">Dark / Moody</button>
+    <button type="button" class="lora-chip" data-chip="active" onclick="setLoraChip(this)">Active only</button>
+  </div>
+  <div class="lora-box" id="loraList"></div>
+  <div class="lora-count" id="loraCount"></div>
+
+  <div class="active-loras" id="activeLoras"></div>
+
+  <div class="controls">
+    <select class="batch-select" id="batch">
+      <option value="1">1 image</option>
+      <option value="2">2 images</option>
+      <option value="3">3 images</option>
+      <option value="4">4 images</option>
+    </select>
+    <button class="primary" id="gen" onclick="generate()">Generate</button>
+  </div>
+  <div class="hint">Tip: Press <b>Ctrl + Enter</b> to generate</div>
+
+  <div class="status" id="status"></div>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="gallery" id="gallery">
+    <div class="gallery-header">
+      <h2>Your images</h2>
+      <div class="gallery-actions-top">
+        <button onclick="downloadAll()">Download all</button>
+        <button onclick="clearGallery()">Clear all</button>
       </div>
     </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
   </div>
+</div>
 
-  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <img id="lightboxImg" src="">
+<div class="modal-bg" id="helperModal" onclick="if(event.target===this)closeHelper()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeHelper()">×</button>
+    <h2>Prompt Helper</h2>
+    <h3>Good vs Bad prompts</h3>
+    <p><span class="good">Good:</span> “A young woman with long red hair standing on a cliff at sunset, wearing a flowing blue dress, soft golden light, cinematic”</p>
+    <p><span class="bad">Bad:</span> “girl pretty nice background cool”</p>
+    <p>The good one tells the AI <b>who</b>, <b>what they’re doing</b>, <b>where</b>, and <b>how it looks</b>.</p>
   </div>
+</div>
 
-  <script>
-    let serverAddress = localStorage.getItem("comfy_server") || "http://127.0.0.1:8188";
-    let currentEngine = "anima"; // Default to Anima pipeline as requested
-    let currentRatio = "1:1";
-    let activeClientId = "nexus_" + Math.random().toString(36).substring(2, 9);
-    let galleryItems = [];
-    let activeWs = null;
-    let uploadedImageName = null;
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
 
-    // Exhaustive LoRA Catalogs parsed directly from your system profiles
-    const loraCatalogs = {
-      anima: [
-        "Anima\\3D_Game_CG_V05.safetensors",
-        "Anima\\9d6_komoreBeams_b01.safetensors",
-        "Anima\\@3danimeface-000006.safetensors",
-        "Anima\\@skintextureV1.safetensors",
-        "Anima\\@fkey-anima-ab1.safetensors",
-        "Anima\\AIIlustOjisan_AnimaB_v01.safetensors",
-        "Anima\\ANIMA_Niji_Sweet_Spot_v4.safetensors",
-        "Anima\\AfroBullStyle_ANIMAv1.safetensors",
-        "Anima\\AnimaB1-NP45iV1.safetensors",
-        "Anima\\Anima_colorfix_v1_by_Volnovik.safetensors",
-        "Anima\\Better Anime Screencap 16.5 V2.safetensors",
-        "Anima\\Dark_Slider_Anima.safetensors",
-        "Anima\\Flatline.safetensors",
-        "Anima\\Hyperrealistic_Anima.safetensors",
-        "Anima\\KMS_BetterDays_ANIMA-ATTEMPT_epoch_12.safetensors",
-        "Anima\\Kotake Standard Anima V1.safetensors",
-        "Anima\\MGE_V7_0_Anima_R7_epoch_2.safetensors",
-        "Anima\\MeIoN_V1_Anima.safetensors",
-        "Anima\\MoriiMee_AnimaV10_byKonan.safetensors",
-        "Anima\\The-Look-Anima3-800.safetensors",
-        "Anima\\TheMilkMan_AnimaP_v03-000020.safetensors",
-        "Anima\\anima-aesthetic-improvement-v1.1.safetensors",
-        "Anima\\anima-highres-aesthetic-boost.safetensors",
-        "Anima\\mixed_styles_anima-base1_v5.safetensors",
-        "Anima\\rendering_detailer_base10-000400.safetensors",
-        "Anima\\violet cinematography-000012.safetensors",
-        "Anima\\GothicNeonAnima.safetensors",
-        "Anima\\ExtremeSizeDiff-V3ANIMA_epoch_8.safetensors",
-        "Anima\\wide_shot-anima.safetensors",
-        "Anima\\rdbt_anima_b1_v0.39.b.safetensors",
-        "Anima\\disney3d-v2-ngai-anima.safetensors",
-        "Anima\\pearly_mario_galaxy.safetensors",
-        "Illustrious\\Anime_artistic_2.safetensors",
-        "Illustrious\\pvc_figure_tf-illust.safetensors",
-        "Anima\\fellatrix_style_anima_goofy.safetensors",
-        "Anima\\anima-turbo-lora-v0.2.safetensors"
-      ],
-      krea: [
-        "Krea\\snofs_krea_v1_1.safetensors",
-        "Krea\\realism_engine_krea2_v3.1.safetensors",
-        "Krea\\real_3d_krea2_loraholic.safetensors",
-        "Krea\\m87_lora_v1.safetensors",
-        "Krea\\krea2_warmpastel.safetensors",
-        "Krea\\krea2-mikkoani.safetensors",
-        "Krea\\krea2-masterpieces-v51.safetensors",
-        "Krea\\PornMaster_Detail_Slider_Krea2_V2.safetensors",
-        "Krea\\MysticXXX_KREA2_v1.safetensors",
-        "Krea\\Krea2_Penis_Bulge_V1_(Degenerator123).safetensors",
-        "Krea\\KNPV3_1.safetensors",
-        "Krea\\IdeoKrea-test.safetensors",
-        "Krea\\Flat_anime_Krea_@.safetensors",
-        "Krea\\Cartoon_Ladies_2.safetensors",
-        "Krea\\@nixeu.safetensors",
-        "Krea\\@syakemayusan.safetensors",
-        "Krea\\AltGirlKrea.safetensors",
-        "Krea\\Anime_character_sheet_krea_2.safetensors",
-        "Krea\\BNN3d_c1-st3000.safetensors",
-        "Krea\\BSS_AJlbTyIIIKu_Krea2.safetensors",
-        "Krea\\CYPERPUNK_KREA_2.safetensors",
-        "Krea\\DigitalPaiting_Krea2_2_c1-st3000.safetensors",
-        "Krea\\EMN3d-K2_c1-st7000.safetensors",
-        "Krea\\Krea2FlatIllustrationV1.safetensors",
-        "Krea\\Krea2Rella_c1-st8000.safetensors",
-        "Krea\\MarvelSpray_Krea2.safetensors",
-        "Krea\\Niji_Sweet_Spot-KREA2_v1.safetensors",
-        "Krea\\Overwatch_Cinematic_Style_Krea_v2_epoch_20.safetensors",
-        "Krea\\greg_rutkowski_v5_krea2.safetensors",
-        "Krea\\krNijiV1.safetensors",
-        "Krea\\krea2_ta86_onitokyo.safetensors",
-        "Krea\\AC_Krea2Raw.safetensors",
-        "Krea\\blackwhiplash_krea2.safetensors",
-        "Krea\\picturd_krea2_v2.safetensors",
-        "Krea\\xionstyle__Krea2__epoch_10.safetensors",
-        "Krea\\Fkey-Krea2_c1-st6000.safetensors",
-        "Krea\\YFG-FutureIsDark-Krea2_1k-v1.safetensors",
-        "Krea\\Noctilume Style.safetensors",
-        "Krea\\zootopia_Krea2Raw.safetensors",
-        "Krea\\Nyl2_OW_Krea_v2_epoch_10.safetensors",
-        "Krea\\k2-void_0_c1-st4000.safetensors",
-        "Krea\\aesthetic_photo-v1_krea2.safetensors",
-        "Krea\\krea2_macromastia_clothed.safetensors",
-        "Krea\\krea2_thickness.safetensors",
-        "Krea\\krea2_macromastia_naked.safetensors",
-        "Krea\\krea2_bigger_muscular.safetensors",
-        "Krea\\WaifuMakerKrea2_epoch_9.safetensors",
-        "Krea\\Krea_Breast_Implanter_v2.safetensors",
-        "Krea\\SexyShush_Krea2_v1.safetensors",
-        "Krea\\Krea2_FemaleDraenei.safetensors",
-        "Krea\\latte_art_KREA2_v1.safetensors",
-        "Krea\\krea2_lora_example-000002.safetensors",
-        "Krea\\3D Model Render Figurine Style LoRA - Krea 2 - Professional Collection - TripTrap V1.safetensors",
-        "Krea\\3D Style Batesz V1.safetensors",
-        "Krea\\3D RPG Style.safetensors",
-        "Krea\\V1.safetensors",
-        "Krea\\K2_cgStyle_V1_nnegret.safetensors",
-        "Krea\\Mrpopo anime full potential.safetensors",
-        "Krea\\DnDPainterlyKrea2Raw.safetensors",
-        "Krea\\Krea2MythD4rkL1nes.safetensors",
-        "Krea\\Fugtrup_Krea2_byKonan.safetensors",
-        "Krea\\OctaneRenderedKrea2Raw.safetensors",
-        "Krea\\ZesteExpressionsV26K.safetensors",
-        "Krea\\krea2-bloomgirls-realism-step00004000.safetensors",
-        "Krea\\Pixar_Disney_3D_Style.safetensors",
-        "Krea\\Krea2-Skin detail v1end.safetensors",
-        "Krea\\sxz-warcraft-cinematic-krea2-v1_epoch_10.safetensors",
-        "Krea\\hina_krea2Turbo_lora_tqd_v4.0.safetensors",
-        "Krea\\krea2_charactersheet_full_v1.safetensors",
-        "Krea\\shrimp_makeup_style_05.safetensors",
-        "Krea\\AltGirlKreaV1.5.safetensors",
-        "Krea\\Playboy-1950s-krea2-v1_000002000.safetensors",
-        "Krea\\The_Body_Version_A_Krea2_Sigmoid_Automagic3_v1_000008500.safetensors",
-        "Krea\\MRB-2_Krea.safetensors"
-      ]
-    };
+<script>
+const SERVER = "https://dragon-seventh-instrument-icon.trycloudflare.com";
+const clientId = "simple_" + Math.random().toString(36).slice(2);
+const CORRECT_PASSWORD = "shenron";
 
-    const dimensionsMap = {
-      "1:1": [1024, 1024],
-      "16:9": [1344, 768],
-      "9:16": [768, 1344]
-    };
+const _memStore = {};
+const store = {
+  get(key) {
+    try { return localStorage.getItem(key); } catch(e) { return _memStore[key] ?? null; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(key, val); } catch(e) { _memStore[key] = val; }
+  }
+};
 
-    const surprisePool = [
-      "image of a beautiful woman with purple and orange colored eyes, long white bunny ears, white hair, tight tubetop, open denim shorts, thong visible, gigantic breasts, athletic, wide thighs",
-      "epic cinematic shot of an advanced futuristic metropolis, volumetric lighting, autonomous robotic landscapers, hyper-detailed textures",
-      "ethereal crystal cathedral floating in the clouds during an aurora borealis, intricate architecture, glowing runes"
-    ];
+let failedAttempts = 0;
+let lockUntil = 0;
 
-    document.getElementById("loraWeight").addEventListener("input", (e) => {
-      document.getElementById("weightVal").textContent = parseFloat(e.target.value).toFixed(2);
-    });
+function checkPassword() {
+  const input = document.getElementById("pwInput");
+  const error = document.getElementById("pwError");
+  const btn = document.getElementById("pwBtn");
+  const now = Date.now();
 
-    function populateLoraDropdown() {
-      const select = document.getElementById("loraSelect");
-      select.innerHTML = '<option value="none">None (Bypassed)</option>';
-      const list = loraCatalogs[currentEngine] || [];
-      list.forEach(loraPath => {
-        const opt = document.createElement("option");
-        opt.value = loraPath;
-        opt.textContent = loraPath.split("\\").pop(); // Clean visible name for UI
-        select.appendChild(opt);
-      });
+  if (now < lockUntil) {
+    const remaining = Math.ceil((lockUntil - now) / 1000);
+    error.textContent = `Too many attempts. Wait ${remaining}s...`;
+    return;
+  }
+
+  const value = input.value.trim();
+
+  if (value === CORRECT_PASSWORD) {
+    document.getElementById("passwordGate").classList.add("hidden");
+    store.set("auth", "1");
+    return;
+  }
+
+  failedAttempts++;
+  input.value = "";
+
+  if (failedAttempts <= 3) {
+    error.textContent = "Incorrect password";
+  } else if (failedAttempts <= 6) {
+    if (failedAttempts === 4) {
+      lockUntil = Date.now() + 5000;
+      error.textContent = "Too many attempts. Locked for 5 seconds.";
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.disabled = false;
+        error.textContent = "";
+      }, 5000);
+    } else {
+      error.textContent = "Incorrect password";
     }
+  } else {
+    lockUntil = Date.now() + 10000;
+    error.textContent = "Too many attempts. Locked for 10 seconds.";
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.disabled = false;
+      error.textContent = "";
+    }, 10000);
+  }
+}
 
-    function toggleTheme() {
-      const isLight = document.body.classList.toggle("light");
-      localStorage.setItem("theme", isLight ? "light" : "dark");
-    }
-    if (localStorage.getItem("theme") === "light") document.body.classList.add("light");
+document.getElementById("pwInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") checkPassword();
+});
 
-    function setEngine(engine) {
-      currentEngine = engine;
-      document.querySelectorAll("#engineSelection .pill-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.engine === engine);
-      });
-      document.body.classList.toggle("anima", engine === "anima");
-      populateLoraDropdown();
-    }
+if (store.get("auth") === "1") {
+  document.getElementById("passwordGate").classList.add("hidden");
+}
 
-    function setRatio(ratio) {
-      currentRatio = ratio;
-      document.querySelectorAll("#ratioSelection .pill-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.ratio === ratio);
-      });
-    }
+let ws = null;
+let gallery = [];
+let remainingJobs = 0;
+let finishedJobs = 0;
+let currentW = 1216, currentH = 832;
+let currentRatio = "3:2";
+let currentSize = "medium";
+let currentEngine = "krea";
+let currentCheckpoint = "DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors";
+let currentTurbo = "none";
+let img2imgName = null;
+let genTimes = [];
+let activeLoraStrengths = {};
+let loraPreviews = {};
 
-    function toggleNegativeBox() {
-      const box = document.getElementById("negativeContainer");
-      box.style.display = box.style.display === "block" ? "none" : "block";
-    }
+const TURBO_FILES = {
+  none: null,
+  v15: "Anima\\Turbo-ANIMA-v1.5.safetensors",
+  v3:  "Anima\\Turbo-ANIMA-v3.safetensors",
+  v02: "Anima\\anima-turbo-lora-v0.2.safetensors"
+};
 
-    function surprisePrompt() {
-      document.getElementById("promptInput").value = surprisePool[Math.floor(Math.random() * surprisePool.length)];
-    }
+const ANIMA_DEFAULT_NEG = "worst quality, low quality, lowres, score_1, score_2, score_3, blurry, jpeg artifacts, sepia, bad anatomy, watermark, artist name, censor, motion lines, red pupils, signature";
 
-    function openSettingsModal() {
-      document.getElementById("serverUrlInput").value = serverAddress;
-      document.getElementById("settingsModal").classList.add("open");
-    }
-    function closeSettingsModal() {
-      document.getElementById("settingsModal").classList.remove("open");
-    }
-    function saveServerSettings() {
-      const val = document.getElementById("serverUrlInput").value.trim();
-      if (val) {
-        serverAddress = val.replace(/\/+$/, "");
-        localStorage.setItem("comfy_server", serverAddress);
-        checkServerStatus();
-      }
-      closeSettingsModal();
-    }
+const RATIO_BASE = {
+  "3:2":  [1216, 832],
+  "1:1":  [1024, 1024],
+  "16:9": [1344, 768],
+  "9:16": [768, 1344],
+  "2:3":  [832, 1216]
+};
+const SIZE_SCALE = { small: 0.75, medium: 1.0, large: 1.25 };
+const SIZE_LABELS = {
+  small:  "faster · lower VRAM",
+  medium: "good balance of quality & speed",
+  large:  "higher detail · needs more VRAM"
+};
 
-    // Image Upload Handler for Img2Img pipelines
-    async function handleImageSelection(input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const formData = new FormData();
-        formData.append("image", file);
-        formData.append("overwrite", "true");
+function snap64(n) {
+  return Math.max(64, Math.round(n / 64) * 64);
+}
 
-        document.getElementById("statusText").textContent = "Uploading source image to server...";
-        try {
-          const res = await fetch(`${serverAddress}/upload/image`, {
-            method: "POST",
-            body: formData
-          });
-          if (!res.ok) throw new Error("Upload failed");
-          const data = await res.json();
-          uploadedImageName = data.name;
-          
-          document.getElementById("uploadLabel").style.display = "none";
-          document.getElementById("imageFileName").textContent = `Loaded: ${file.name}`;
-          document.getElementById("imagePreviewContainer").style.display = "flex";
-          document.getElementById("statusText").textContent = "Image ready for Img2Img execution.";
-        } catch (e) {
-          alert("Failed to upload image to ComfyUI host. Check connection.");
-          document.getElementById("statusText").textContent = "Upload failed.";
-        }
-      }
-    }
+function applyResolution() {
+  const base = RATIO_BASE[currentRatio] || [1216, 832];
+  const scale = SIZE_SCALE[currentSize] || 1;
+  currentW = snap64(base[0] * scale);
+  currentH = snap64(base[1] * scale);
+  const hint = document.getElementById("resHint");
+  if (hint) {
+    hint.textContent = `${currentW} × ${currentH} · ${SIZE_LABELS[currentSize] || ""}`;
+  }
+}
 
-    function clearUploadedImage() {
-      uploadedImageName = null;
-      document.getElementById("imageUpload").value = "";
-      document.getElementById("uploadLabel").style.display = "block";
-      document.getElementById("imagePreviewContainer").style.display = "none";
-      document.getElementById("statusText").textContent = "Switched back to Text-to-Image mode.";
-    }
+try {
+  loraPreviews = JSON.parse(store.get("loraPreviews") || "{}");
+} catch(e) {}
 
-    async function checkServerStatus() {
-      const dot = document.getElementById("connectionDot");
-      const text = document.getElementById("connectionText");
-      try {
-        const res = await fetch(`${serverAddress}/queue`, { method: "GET", cache: "no-store" });
-        if (!res.ok) throw new Error();
-        dot.className = "dot online";
-        text.textContent = "Pipeline Online";
-      } catch (e) {
-        dot.className = "dot";
-        text.textContent = "Node Offline / Check URL";
-      }
-    }
-    checkServerStatus();
-    setInterval(checkServerStatus, 10000);
-    populateLoraDropdown();
+const LORA_MAP = [
+  { id:"lora_1",  name:"Snofs",              desc:"Natural skin & body detail (NSFW-friendly realism)", trigger:"" },
+  { id:"lora_2",  name:"Realism Engine",     desc:"Strong photorealism boost", trigger:"" },
+  { id:"lora_3",  name:"Real 3D",            desc:"3D rendered look", trigger:"" },
+  { id:"lora_4",  name:"m87",                desc:"Stylised character detail", trigger:"" },
+  { id:"lora_5",  name:"Warm Pastel",        desc:"Soft warm pastel colours", trigger:"" },
+  { id:"lora_6",  name:"Mikkoani",           desc:"Clean anime style", trigger:"" },
+  { id:"lora_7",  name:"Masterpieces",       desc:"Classic painted masterpiece feel", trigger:"" },
+  { id:"lora_13", name:"Flat Anime",         desc:"Flat colourful anime look", trigger:"" },
+  { id:"lora_14", name:"Cartoon Ladies",     desc:"Stylised cartoon women", trigger:"" },
+  { id:"lora_15", name:"Nixeu",              desc:"Soft detailed illustration style", trigger:"" },
+  { id:"lora_16", name:"Syake Mayusan",      desc:"Delicate anime aesthetic", trigger:"" },
+  { id:"lora_17", name:"Alt Girl",           desc:"Alternative / e-girl look (v1.5 updated)", trigger:"" },
+  { id:"lora_18", name:"Anime Char Sheet",   desc:"Clean character sheet style", trigger:"" },
+  { id:"lora_19", name:"BNN 3D",             desc:"Soft 3D character render", trigger:"" },
+  { id:"lora_20", name:"BSS Style",          desc:"Soft illustrative character style", trigger:"" },
+  { id:"lora_21", name:"Cyberpunk",          desc:"Neon cyberpunk atmosphere", trigger:"" },
+  { id:"lora_22", name:"Digital Painting",   desc:"Digital illustration style", trigger:"" },
+  { id:"lora_23", name:"EMN 3D",             desc:"Soft 3D / rendered character look", trigger:"" },
+  { id:"lora_24", name:"Flat Illustration",  desc:"Clean flat vector-like art", trigger:"" },
+  { id:"lora_25", name:"Rella",              desc:"Soft painterly anime", trigger:"" },
+  { id:"lora_26", name:"Marvel Spray",       desc:"Comic / spray-paint style", trigger:"" },
+  { id:"lora_27", name:"Niji Sweet Spot",    desc:"Soft detailed anime (Niji-like)", trigger:"" },
+  { id:"lora_28", name:"Overwatch Cinematic",desc:"Cinematic game-art style", trigger:"" },
+  { id:"lora_29", name:"Greg Rutkowski",     desc:"Fantasy oil-painting style", trigger:"" },
+  { id:"lora_30", name:"krNiji",             desc:"Another strong anime look", trigger:"" },
+  { id:"lora_31", name:"Onitokyo",           desc:"Japanese urban / street style", trigger:"" },
+  { id:"lora_32", name:"AC Raw",             desc:"Clean raw aesthetic", trigger:"" },
+  { id:"lora_33", name:"Black Whiplash",     desc:"Dark stylish character look", trigger:"" },
+  { id:"lora_34", name:"Picturd",            desc:"Stylised pictorial rendering", trigger:"" },
+  { id:"lora_35", name:"Xion Style",         desc:"Distinctive stylised characters", trigger:"" },
+  { id:"lora_36", name:"Fkey",               desc:"Detailed illustrative style", trigger:"" },
+  { id:"lora_37", name:"Future Is Dark",     desc:"Dark futuristic mood", trigger:"" },
+  { id:"lora_38", name:"Noctilume",          desc:"Moody dark lighting", trigger:"" },
+  { id:"lora_39", name:"Zootopia",           desc:"Anthropomorphic / cartoon animal style", trigger:"" },
+  { id:"lora_40", name:"Nyl OW",             desc:"Overwatch-inspired characters", trigger:"" },
+  { id:"lora_41", name:"Void",               desc:"Dark abstract / void aesthetic", trigger:"" },
+  { id:"lora_42", name:"Aesthetic Photo",    desc:"Instagram-aesthetic photography", trigger:"" },
+  { id:"lora_47", name:"Waifu Maker",        desc:"Classic anime waifu style", trigger:"" },
+  { id:"lora_51", name:"Latte Art",          desc:"Soft creamy latte-art look", trigger:"" },
+  { id:"lora_52", name:"Krea Example",       desc:"General Krea2 style example LoRA", trigger:"" },
+  { id:"lora_54", name:"Figurine Style",     desc:"3D collectible figure look", trigger:"" },
+  { id:"lora_55", name:"3D Batesz",          desc:"Polished 3D render style", trigger:"" },
+  { id:"lora_56", name:"3D RPG",             desc:"Fantasy RPG 3D characters", trigger:"" },
+  { id:"lora_57", name:"V1 Style",           desc:"Clean general stylisation", trigger:"" },
+  { id:"lora_58", name:"CG Style",           desc:"Polished CG render look", trigger:"" },
+  { id:"lora_59", name:"Mrpopo Anime",       desc:"High-detail anime characters", trigger:"" },
+  { id:"lora_60", name:"DnD Painterly",      desc:"D&D fantasy painting style", trigger:"" },
+  { id:"lora_61", name:"Myth Dark Lines",    desc:"Dark fantasy line-art feel", trigger:"" },
+  { id:"lora_62", name:"Real 3D (alt)",      desc:"Alternate Real 3D strength slot", trigger:"" },
+  { id:"lora_63", name:"Fugtrup 3D",         desc:"High-end polished 3D character style", trigger:"fugtrup_style" },
+  { id:"lora_64", name:"Octane Render",      desc:"Cinematic hyper-detail Octane / Unreal look", trigger:"Octane Render" },
+  { id:"lora_65", name:"Zeste Expressions",  desc:"Strong facial expressions (70+ emotions)", trigger:"" },
+  { id:"lora_66", name:"BloomGirls Real",    desc:"Ultra-realism for women (BloomGirls)", trigger:"bl00m" },
+  { id:"lora_67", name:"Pixar Disney 3D",    desc:"Pixar / Disney 3D animation style", trigger:"3dpixar" },
+  { id:"lora_68", name:"Ray Skin Detail",    desc:"Enhanced skin detail (try ~0.5 strength)", trigger:"" },
+  { id:"lora_69", name:"Blizzard Cinematic", desc:"Blizzard / Warcraft cinematic style", trigger:"@wrcrftcnmtc" },
+  { id:"lora_70", name:"AsianMix",           desc:"Asian / East Asian beauty mix", trigger:"asian woman" },
+  { id:"lora_71", name:"TripleView",         desc:"Multi-view character sheet layout", trigger:"" },
+  { id:"lora_72", name:"Shrimp Makeup",      desc:"Makeup styles collection", trigger:"makeup" }
+];
 
-    async function startGeneration() {
-      const promptText = document.getElementById("promptInput").value.trim();
-      if (!promptText) {
-        alert("Please provide a prompt description.");
-        return;
-      }
+const ANIMA_LORA_MAP = [
+  { id:"a_lora_1",  name:"3D Game CG",           desc:"3D game / CG render look", trigger:"" },
+  { id:"a_lora_2",  name:"Komore Beams",         desc:"Light beams / atmospheric light", trigger:"" },
+  { id:"a_lora_3",  name:"3D Anime Face",        desc:"3D-styled anime faces", trigger:"" },
+  { id:"a_lora_4",  name:"Skin Texture",         desc:"Enhanced skin texture", trigger:"" },
+  { id:"a_lora_5",  name:"Fkey Anima",           desc:"Detailed illustrative style", trigger:"" },
+  { id:"a_lora_6",  name:"AIIlustOjisan",        desc:"Illustration style", trigger:"" },
+  { id:"a_lora_7",  name:"Niji Sweet Spot",      desc:"Soft detailed anime (Niji-like)", trigger:"" },
+  { id:"a_lora_8",  name:"AfroBull Style",       desc:"AfroBull character style", trigger:"" },
+  { id:"a_lora_9",  name:"NP45i",                desc:"Anima style booster", trigger:"" },
+  { id:"a_lora_10", name:"Colorfix",           desc:"Colour / contrast fill", trigger:"" },
+  { id:"a_lora_11", name:"Anime Screencap",      desc:"Better anime screencap look", trigger:"" },
+  { id:"a_lora_12", name:"Dark Slider",          desc:"Darker mood / lighting", trigger:"" },
+  { id:"a_lora_13", name:"Flatline",             desc:"Flat stylised look", trigger:"" },
+  { id:"a_lora_14", name:"Hyperrealistic",       desc:"Hyperrealism boost", trigger:"" },
+  { id:"a_lora_15", name:"Better Days",          desc:"KMS Better Days aesthetic", trigger:"" },
+  { id:"a_lora_16", name:"Kotake Standard",      desc:"Kotake standard Anima style", trigger:"" },
+  { id:"a_lora_17", name:"MGE",                  desc:"MGE style", trigger:"" },
+  { id:"a_lora_18", name:"MeIoN",                desc:"MeIoN style", trigger:"" },
+  { id:"a_lora_19", name:"MoriiMee",             desc:"MoriiMee character style", trigger:"" },
+  { id:"a_lora_20", name:"The Look",             desc:"Signature look aesthetic", trigger:"" },
+  { id:"a_lora_21", name:"Milk Man",             desc:"The Milk Man style", trigger:"" },
+  { id:"a_lora_22", name:"Aesthetic Improve",    desc:"General aesthetic improvement", trigger:"" },
+  { id:"a_lora_23", name:"Highres Aesthetic",    desc:"High-res aesthetic boost", trigger:"" },
+  { id:"a_lora_24", name:"Mixed Styles",         desc:"Mixed style blend", trigger:"" },
+  { id:"a_lora_25", name:"Rendering Detailer",   desc:"Rendering / detail pass", trigger:"" },
+  { id:"a_lora_26", name:"Violet Cinema",        desc:"Violet cinematography mood", trigger:"" },
+  { id:"a_lora_27", name:"Gothic Neon",          desc:"Gothic neon atmosphere", trigger:"" },
+  { id:"a_lora_28", name:"Extreme Size Diff",    desc:"Extreme size difference concepts", trigger:"" },
+  { id:"a_lora_29", name:"Wide Shot",            desc:"Wide shot composition", trigger:"" },
+  { id:"a_lora_30", name:"rdbt",                 desc:"rdbt Anima style", trigger:"" },
+  { id:"a_lora_31", name:"Fellatrix",            desc:"Fellatrix / GoofyAi style", trigger:"" },
+  { id:"a_lora_32", name:"Anime Artistic",       desc:"Artistic anime look (light)", trigger:"@Art8st" },
+  { id:"a_lora_33", name:"Anime Figure",         desc:"Anime figure / figurine style", trigger:"f1gur3" },
+  { id:"a_lora_34", name:"Disney 3D",            desc:"Disney 3D animation style", trigger:"@disney3d" },
+  { id:"a_lora_35", name:"Pearly Mario",         desc:"Super Mario movie / pearly 3D style", trigger:"" }
+];
 
-      const generateBtn = document.getElementById("generateBtn");
-      const statusText = document.getElementById("statusText");
-      const progressBarWrap = document.getElementById("progressBarWrap");
-      const progressBarFill = document.getElementById("progressBarFill");
+const ANIMA_LORA_FILES = {
+  a_lora_1:  "Anima\\3D_Game_CG_V05.safetensors",
+  a_lora_2:  "Anima\\9d6_komoreBeams_b01.safetensors",
+  a_lora_3:  "Anima\\@3danimeface-000006.safetensors",
+  a_lora_4:  "Anima\\@skintextureV1.safetensors",
+  a_lora_5:  "Anima\\@fkey-anima-ab1.safetensors",
+  a_lora_6:  "Anima\\AIIlustOjisan_AnimaB_v01.safetensors",
+  a_lora_7:  "Anima\\ANIMA_Niji_Sweet_Spot_v4.safetensors",
+  a_lora_8:  "Anima\\AfroBullStyle_ANIMAv1.safetensors",
+  a_lora_9:  "Anima\\AnimaB1-NP45iV1.safetensors",
+  a_lora_10: "Anima\\Anima_colorfill_v1_by_Volnovik.safetensors",
+  a_lora_11: "Anima\\Better Anime Screencap 16.5 V2.safetensors",
+  a_lora_12: "Anima\\Dark_Slider_Anima.safetensors",
+  a_lora_13: "Anima\\Flatline.safetensors",
+  a_lora_14: "Anima\\Hyperrealistic_Anima.safetensors",
+  a_lora_15: "Anima\\KMS_BetterDays_ANIMA-ATTEMPT_epoch_12.safetensors",
+  a_lora_16: "Anima\\Kotake Standard Anima V1.safetensors",
+  a_lora_17: "Anima\\MGE_V7_0_Anima_R7_epoch_2.safetensors",
+  a_lora_18: "Anima\\MeIoN_V1_Anima.safetensors",
+  a_lora_19: "Anima\\MoriiMee_AnimaV10_byKonan.safetensors",
+  a_lora_20: "Anima\\The-Look-Anima3-800.safetensors",
+  a_lora_21: "Anima\\TheMilkMan_AnimaP_v03-000020.safetensors",
+  a_lora_22: "Anima\\anima-aesthetic-improvement-v1.1.safetensors",
+  a_lora_23: "Anima\\anima-highres-aesthetic-boost.safetensors",
+  a_lora_24: "Anima\\mixed_styles_anima-base1_v5.safetensors",
+  a_lora_25: "Anima\\rendering_detailer_base10-000400.safetensors",
+  a_lora_26: "Anima\\violet cinematography-000012.safetensors",
+  a_lora_27: "Anima\\GothicNeonAnima.safetensors",
+  a_lora_28: "Anima\\ExtremeSizeDiff-V3ANIMA_epoch_8.safetensors",
+  a_lora_29: "Anima\\wide_shot-anima.safetensors",
+  a_lora_30: "Anima\\rdbt_anima_b1_v0.39.b.safetensors",
+  a_lora_31: "Anima\\fellatrix_style_anima_goofy.safetensors",
+  a_lora_32: "Anima\\Artistic_anime_update_64d32a.safetensors",
+  a_lora_33: "Anima\\AnimeFigure_ANIMA.safetensors",
+  a_lora_34: "Anima\\disney3d-v2-ngai-anima.safetensors",
+  a_lora_35: "Anima\\pearly_mario_galaxy.safetensors"
+};
 
-      generateBtn.disabled = true;
-      statusText.textContent = "Constructing native pipeline execution graph...";
-      progressBarWrap.style.display = "block";
-      progressBarFill.style.width = "10%";
+function currentLoraMap() {
+  return currentEngine === "anima" ? ANIMA_LORA_MAP : LORA_MAP;
+}
 
-      const [width, height] = dimensionsMap[currentRatio];
-      const seedVal = Math.floor(Math.random() * 1e15);
-      const selectedLora = document.getElementById("loraSelect").value;
-      const loraWeight = parseFloat(document.getElementById("loraWeight").value);
-      const negText = document.getElementById("negativeInput").value || "worst quality, low quality, blurry";
+const FUN = ["Warming up the pixels...","Mixing the colours...","Painting the details...","Adding a touch of magic...","Almost there...","Finishing touches...","The AI is concentrating...","Summoning the image..."];
 
-      let workflowNodes = {};
+const SURPRISE_PROMPTS = [
+  "a lone samurai standing in a rainy neon alley, cinematic lighting",
+  "cozy cabin in a snowy forest at golden hour, warm windows glowing",
+  "elegant woman in a flowing red dress walking through a field of lavender",
+  "cyberpunk city street at night, reflections on wet pavement, vibrant signs",
+  "ancient library filled with floating books and soft magical light"
+];
 
-      if (currentEngine === "anima") {
-        // Anima High-Performance Pipeline Blueprint
-        workflowNodes = {
-          "295": { inputs: { unet_name: "animaMayhem_v10.safetensors", weight_dtype: "default" }, class_type: "UNETLoader" },
-          "296": { inputs: { clip_name: "qwen_3_06b_base.safetensors", type: "stable_diffusion", device: "default" }, class_type: "CLIPLoader" },
-          "297": { inputs: { vae_name: "qwen_image_vae.safetensors" }, class_type: "VAELoader" },
-          "114": { inputs: { seed: seedVal }, class_type: "Seed (rgthree)" },
-          "5": { inputs: { text: promptText, clip: selectedLora !== "none" ? ["226", 1] : ["296", 0] }, class_type: "CLIPTextEncode" },
-          "7": { inputs: { text: negText, clip: selectedLora !== "none" ? ["226", 1] : ["296", 0] }, class_type: "CLIPTextEncode" },
-          "29": { inputs: { any_01: ["297", 0] }, class_type: "Any Switch (rgthree)" },
-          "41": {
-            inputs: {
-              filename: "%time_%basemodelname_%seed", path: "AnimaStudio", extension: "png",
-              steps: 12, cfg: 1, modelname: "animaMayhem_v10.safetensors", sampler_name: "euler",
-              scheduler_name: "normal", positive: ["5", 0], negative: ["7", 0], seed_value: ["114", 0],
-              width: width, height: height, lossless_webp: true, quality_jpeg_or_webp: 100,
-              optimize_png: false, counter: 0, denoise: 1, clip_skip: 0, time_format: "%Y-%m-%d-%H%M%S",
-              save_workflow_as_json: false, embed_workflow: false, additional_hashes: "",
-              download_civitai_data: false, easy_remix: true, show_preview: true, custom: "",
-              images: ["100", 0]
-            },
-            class_type: "Image Saver"
-          }
-        };
+function playStarSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+    osc.start(now);
+    osc.stop(now + 0.65);
+  } catch(e) {}
+}
 
-        let baseModelNode = ["295", 0];
-        let baseClipNode = ["296", 0];
+function spawnStars() {
+  const stars = ["✦", "✧", "★", "⋆", "✶"];
+  for (let i = 0; i < 14; i++) {
+    const star = document.createElement("div");
+    star.className = "star";
+    star.textContent = stars[Math.floor(Math.random() * stars.length)];
+    const x = window.innerWidth * 0.3 + Math.random() * window.innerWidth * 0.4;
+    const y = window.innerHeight * 0.45 + Math.random() * 80;
+    star.style.left = x + "px";
+    star.style.top = y + "px";
+    star.style.fontSize = (14 + Math.random() * 16) + "px";
+    star.style.color = `hsl(${40 + Math.random()*40}, 90%, ${65 + Math.random()*20}%)`;
+    star.style.animationDuration = (1.1 + Math.random() * 0.6) + "s";
+    star.style.animationDelay = (Math.random() * 0.25) + "s";
+    document.body.appendChild(star);
+    setTimeout(() => star.remove(), 1800);
+  }
+}
 
-        // LoRA Loader injection for Anima
-        if (selectedLora !== "none") {
-          workflowNodes["226"] = {
-            inputs: {
-              PowerLoraLoaderHeaderWidget: { type: "PowerLoraLoaderHeaderWidget" },
-              lora_1: { on: true, lora: selectedLora, strength: loraWeight },
-              "➕ Add Lora": "",
-              model: baseModelNode,
-              clip: baseClipNode
-            },
-            class_type: "Power Lora Loader (rgthree)"
-          };
-          baseModelNode = ["226", 0];
-        }
+function celebrate() {
+  playStarSound();
+  spawnStars();
+}
 
-        if (uploadedImageName) {
-          // Img2Img setup branch
-          workflowNodes["118"] = { inputs: { image: uploadedImageName, upload: "image" }, class_type: "LoadImage" };
-          workflowNodes["119"] = { inputs: { pixels: ["118", 0], vae: ["29", 0] }, class_type: "VAEEncode" };
-          workflowNodes["207"] = {
-            inputs: {
-              add_noise: "enable", noise_seed: ["114", 0], steps: 12, cfg: 1,
-              sampler_name: "euler", scheduler: "normal", start_at_step: 0, end_at_step: 10000,
-              return_with_leftover_noise: "disable", model: baseModelNode, positive: ["5", 0],
-              negative: ["7", 0], latent_image: ["119", 0]
-            },
-            class_type: "KSamplerAdvanced"
-          };
-        } else {
-          // T2I setup branch
-          workflowNodes["97"] = { inputs: { width: width, height: height, batch_size: 1 }, class_type: "EmptyLatentImage" };
-          workflowNodes["207"] = {
-            inputs: {
-              add_noise: "enable", noise_seed: ["114", 0], steps: 12, cfg: 1,
-              sampler_name: "euler", scheduler: "normal", start_at_step: 0, end_at_step: 10000,
-              return_with_leftover_noise: "disable", model: baseModelNode, positive: ["5", 0],
-              negative: ["7", 0], latent_image: ["97", 0]
-            },
-            class_type: "KSamplerAdvanced"
-          };
-        }
+let currentLoraChip = "all";
+const loraList = document.getElementById("loraList");
 
-        workflowNodes["100"] = { inputs: { samples: ["207", 0], vae: ["29", 0] }, class_type: "VAEDecode" };
+function rebuildLoraList() {
+  loraList.innerHTML = "";
+  document.getElementById("activeLoras").innerHTML = "";
+  const map = currentLoraMap();
+  const valid = new Set(map.map(l => l.id));
+  Object.keys(activeLoraStrengths).forEach(k => { if (!valid.has(k)) delete activeLoraStrengths[k]; });
+  map.forEach(l => {
+    const div = document.createElement("label");
+    div.className = "lora-item";
+    div.dataset.id = l.id;
+    div.dataset.search = (l.name + " " + l.desc + " " + (l.trigger || "")).toLowerCase();
+    const triggerNote = l.trigger ? `<div class="lora-desc" style="color:#4ade80">Trigger: “${l.trigger}” (auto-added)</div>` : "";
+    div.innerHTML = `<input type="checkbox" value="${l.id}" onchange="onLoraToggle('${l.id}', this.checked)"><div><div class="lora-name">${l.name}</div><div class="lora-desc">${l.desc}</div>${triggerNote}</div>`;
+    loraList.appendChild(div);
+  });
+  filterLoras();
+}
+rebuildLoraList();
 
-      } else {
-        // Krea Turbo Pipeline Blueprint
-        workflowNodes = {
-          "1": { inputs: { unet_name: "DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors", weight_dtype: "default" }, class_type: "UNETLoader" },
-          "3": { inputs: { clip_name: "qwen3vl_4b_fp8_scaled.safetensors", type: "krea2", device: "default" }, class_type: "CLIPLoader" },
-          "16": { inputs: { vae_name: "krea2RealVae_v10.safetensors" }, class_type: "VAELoader" },
-          "12": { inputs: { seed: seedVal }, class_type: "Seed (rgthree)" },
-          "123:8": { inputs: { text: promptText, clip: selectedLora !== "none" ? ["30", 1] : ["3", 0] }, class_type: "CLIPTextEncode" },
-          "123:29": { inputs: { conditioning: ["123:8", 0] }, class_type: "ConditioningZeroOut" }
-        };
+function setLoraChip(btn) {
+  document.querySelectorAll(".lora-chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  currentLoraChip = btn.dataset.chip;
+  filterLoras();
+}
 
-        let activeKreaModel = ["1", 0];
-        if (selectedLora !== "none") {
-          workflowNodes["30"] = {
-            inputs: {
-              PowerLoraLoaderHeaderWidget: { type: "PowerLoraLoaderHeaderWidget" },
-              lora_1: { on: true, lora: selectedLora, strength: loraWeight },
-              "➕ Add Lora": "",
-              model: ["1", 0],
-              clip: ["3", 0]
-            },
-            class_type: "Power Lora Loader (rgthree)"
-          };
-          activeKreaModel = ["30", 0];
-        }
+function filterLoras() {
+  const q = (document.getElementById("loraSearch").value || "").trim().toLowerCase();
+  const chip = currentLoraChip;
+  let shown = 0;
+  document.querySelectorAll("#loraList .lora-item").forEach(item => {
+    const text = item.dataset.search || "";
+    const checked = item.querySelector("input")?.checked;
+    let matchQ = !q || text.includes(q);
+    let matchChip = chip === "all" || (chip === "active" ? !!checked : true);
+    const show = matchQ && matchChip;
+    item.classList.toggle("hidden", !show);
+    if (show) shown++;
+  });
+  const countEl = document.getElementById("loraCount");
+  if (countEl) {
+    const total = currentLoraMap().length;
+    countEl.textContent = shown === total ? `${total} LoRAs` : `Showing ${shown} of ${total}`;
+  }
+}
 
-        if (uploadedImageName) {
-          // Img2Img path for Krea
-          workflowNodes["img_load"] = { inputs: { image: uploadedImageName, upload: "image" }, class_type: "LoadImage" };
-          workflowNodes["img_enc"] = { inputs: { pixels: ["img_load", 0], vae: ["16", 0] }, class_type: "VAEEncode" };
-          workflowNodes["123:6"] = {
-            inputs: {
-              seed: ["12", 0], steps: 8, cfg: 1, sampler_name: "euler", scheduler: "linear_quadratic",
-              denoise: 0.75, model: activeKreaModel, positive: ["123:8", 0], negative: ["123:29", 0], latent_image: ["img_enc", 0]
-            },
-            class_type: "KSampler"
-          };
-        } else {
-          // T2I path for Krea
-          workflowNodes["11"] = { inputs: { width: width, height: height, batch_size: 1 }, class_type: "EmptyLatentImage" };
-          workflowNodes["123:6"] = {
-            inputs: {
-              seed: ["12", 0], steps: 8, cfg: 1, sampler_name: "euler", scheduler: "linear_quadratic",
-              denoise: 1, model: activeKreaModel, positive: ["123:8", 0], negative: ["123:29", 0], latent_image: ["11", 0]
-            },
-            class_type: "KSampler"
-          };
-        }
+function ensureTriggerInPrompt(trigger) {
+  if (!trigger) return;
+  const ta = document.getElementById("prompt");
+  if (ta.value.toLowerCase().includes(trigger.toLowerCase())) return;
+  ta.value = (ta.value.trim() ? trigger + ", " + ta.value.trim() : trigger);
+}
 
-        workflowNodes["123:102"] = { inputs: { samples: ["123:6", 0], vae: ["16", 0] }, class_type: "VAEDecode" };
-        workflowNodes["212"] = {
-          inputs: {
-            filename: "%time_%basemodelname_%seed", path: "KreaStudio", extension: "png",
-            lossless_webp: true, quality_jpeg_or_webp: 100, optimize_png: false, embed_workflow: true,
-            save_workflow_as_json: false, counter: 0, time_format: "%Y-%m-%d-%H%M%S", show_preview: false,
-            images: ["123:102", 0],
-            metadata: {
-              modelname: "Kreav2(new)", positive: promptText, negative: negText,
-              width: width, height: height, seed_value: seedVal, steps: 8, cfg: 1,
-              sampler_name: "euler", scheduler_name: "normal", denoise: 1, clip_skip: 0,
-              additional_hashes: "", download_civitai_data: true, easy_remix: true, custom: ""
-            }
-          },
-          class_type: "Image Saver Simple"
-        };
-      }
+function removeTriggerFromPrompt(trigger) {
+  if (!trigger) return;
+  const ta = document.getElementById("prompt");
+  const re = new RegExp("(^|,\\s*)" + trigger.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(\\s*,)?", "gi");
+  ta.value = ta.value.replace(re, (m, p1, p2) => (p1 === "," || p1.startsWith(",") ? (p2 ? "," : "") : "")).replace(/^,\s*/, "").trim();
+}
 
-      try {
-        statusText.textContent = "Transmitting job payload to active server...";
-        progressBarFill.style.width = "35%";
-
-        const response = await fetch(`${serverAddress}/prompt`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: workflowNodes, client_id: activeClientId })
+function onLoraToggle(id, checked) {
+  const info = currentLoraMap().find(l => l.id === id);
+  if (info && info.trigger) {
+    if (checked) ensureTriggerInPrompt(info.trigger);
+    else {
+      const stillNeeded = [...document.querySelectorAll("#loraList input:checked")]
+        .some(cb => {
+          const other = currentLoraMap().find(l => l.id === cb.value);
+          return other && other.trigger === info.trigger;
         });
+      if (!stillNeeded) removeTriggerFromPrompt(info.trigger);
+    }
+  }
+  updateActiveLoras();
+  filterLoras();
+  saveSettings();
+}
 
-        if (!response.ok) throw new Error(await response.text());
-        const data = await response.json();
-        
-        trackJobExecution(data.prompt_id, seedVal, promptText);
-      } catch (err) {
-        statusText.textContent = "Error: Transmission rejected by server.";
-        progressBarWrap.style.display = "none";
-        generateBtn.disabled = false;
-      }
+function updateActiveLoras() {
+  const container = document.getElementById("activeLoras");
+  container.innerHTML = "";
+
+  document.querySelectorAll("#loraList input:checked").forEach(cb => {
+    const id = cb.value;
+    const info = currentLoraMap().find(l => l.id === id);
+    if (!info) return;
+
+    if (activeLoraStrengths[id] === undefined) {
+      activeLoraStrengths[id] = (id === "lora_68") ? 0.5 : 1.0;
     }
 
-    function trackJobExecution(promptId, seed, promptText) {
-      const wsUrl = serverAddress.replace("https://", "wss://").replace("http://", "ws://");
-      if (activeWs) activeWs.close();
+    const hasPreview = !!loraPreviews[id];
+    const triggerHtml = info.trigger ? `<div style="font-size:0.75rem;color:#4ade80">Trigger “${info.trigger}” is in your prompt</div>` : "";
 
-      activeWs = new WebSocket(`${wsUrl}/ws?clientId=${activeClientId}`);
+    const card = document.createElement("div");
+    card.className = "active-lora-card";
+    card.innerHTML = `
+      <div class="active-lora-header">
+        <div class="active-lora-name">${info.name}</div>
+        <div class="active-lora-actions">
+          ${hasPreview ? `<button class="preview-btn" onclick="showLoraPreview('${id}')">Preview last image</button>` : ""}
+          <button class="active-lora-off" onclick="turnOffLora('${id}')">Turn off</button>
+        </div>
+      </div>
+      ${triggerHtml}
+      <div class="active-lora-strength">
+        <span>Strength</span>
+        <input type="range" min="0.1" max="1.5" step="0.05" value="${activeLoraStrengths[id]}" 
+               oninput="activeLoraStrengths['${id}']=parseFloat(this.value); this.nextElementSibling.textContent=parseFloat(this.value).toFixed(2); saveSettings()">
+        <span>${activeLoraStrengths[id].toFixed(2)}</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
 
-      activeWs.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === "progress") {
-            const pct = Math.round((msg.data.value / msg.data.max) * 50) + 35;
-            document.getElementById("progressBarFill").style.width = `${pct}%`;
-            document.getElementById("statusText").textContent = `Processing sampling step ${msg.data.value}/${msg.data.max}...`;
-          }
-          if (msg.type === "executing" && msg.data.node === null && msg.data.prompt_id === promptId) {
-            fetchOutputHistory(promptId, seed, promptText);
-          }
-        } catch (e) {}
-      };
-    }
+function turnOffLora(id) {
+  const cb = document.querySelector(`#loraList input[value="${id}"]`);
+  if (cb) {
+    cb.checked = false;
+    delete activeLoraStrengths[id];
+    onLoraToggle(id, false);
+  }
+}
 
-    async function fetchOutputHistory(promptId, seed, promptText) {
-      try {
-        const res = await fetch(`${serverAddress}/history/${promptId}`);
-        const history = await res.json();
-        const entry = history[promptId];
-        
-        if (entry && entry.outputs) {
-          for (const nodeKey of Object.keys(entry.outputs)) {
-            const images = entry.outputs[nodeKey].images;
-            if (images && images.length > 0) {
-              const imgInfo = images[0];
-              const imageUrl = `${serverAddress}/view?filename=${encodeURIComponent(imgInfo.filename)}&subfolder=${encodeURIComponent(imgInfo.subfolder || "")}&type=${imgInfo.type || "output"}`;
-              
-              galleryItems.unshift({ url: imageUrl, seed, prompt: promptText });
-              renderGallery();
-            }
-          }
-        }
-      } catch (e) {}
+function showLoraPreview(id) {
+  const url = loraPreviews[id];
+  if (url) openLightbox(url);
+}
 
-      document.getElementById("progressBarFill").style.width = "100%";
-      document.getElementById("statusText").textContent = "Generation complete.";
-      document.getElementById("generateBtn").disabled = false;
-      setTimeout(() => { document.getElementById("progressBarWrap").style.display = "none"; }, 1000);
-    }
+document.querySelectorAll("#ratios .ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#ratios .ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentRatio = btn.dataset.ratio;
+    applyResolution();
+    saveSettings();
+  };
+});
 
-    function renderGallery() {
-      const section = document.getElementById("gallerySection");
-      const grid = document.getElementById("galleryGrid");
-      section.style.display = "block";
-      grid.innerHTML = "";
+document.querySelectorAll("#sizes .ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#sizes .ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentSize = btn.dataset.size;
+    applyResolution();
+    saveSettings();
+  };
+});
 
-      galleryItems.forEach((item, index) => {
-        const card = document.createElement("div");
-        card.className = "gallery-item";
-        card.innerHTML = `
-          <img src="${item.url}" onclick="openLightbox('${item.url}')">
-          <div class="gallery-actions">
-            <button onclick="downloadImage('${item.url}')">Download</button>
-            <button onclick="deleteGalleryItem(${index})">✕</button>
-          </div>
-        `;
-        grid.appendChild(card);
+function bindCheckpointButtons(containerId) {
+  document.querySelectorAll("#" + containerId + " .ratio-btn").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("#" + containerId + " .ratio-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentCheckpoint = btn.dataset.ckpt;
+      const hint = document.getElementById("ckptHint");
+      if (hint) hint.textContent = "Using: " + currentCheckpoint;
+      saveSettings();
+    };
+  });
+}
+bindCheckpointButtons("checkpointsKrea");
+bindCheckpointButtons("checkpointsAnima");
+
+document.querySelectorAll("#turboRow .ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#turboRow .ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentTurbo = btn.dataset.turbo || "none";
+    saveSettings();
+  };
+});
+
+function setEngine(engine) {
+  currentEngine = engine;
+  document.querySelectorAll("#engineRow .ratio-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.engine === engine);
+  });
+  const isAnima = engine === "anima";
+  document.body.classList.toggle("anima", isAnima);
+  const engLabel = document.getElementById("engineLabel");
+  if (engLabel) engLabel.textContent = isAnima ? "Anima" : "Krea";
+  document.getElementById("checkpointsKrea").style.display = isAnima ? "none" : "flex";
+  document.getElementById("checkpointsAnima").style.display = isAnima ? "flex" : "none";
+  document.getElementById("turboSection").style.display = isAnima ? "block" : "none";
+  document.getElementById("img2imgSection").style.display = isAnima ? "block" : "none";
+  document.getElementById("engineHint").textContent = isAnima
+    ? "Anima · anime / stylised · supports img2img + turbo"
+    : "Krea · fast turbo detail · natural language prompts";
+
+  const row = document.getElementById(isAnima ? "checkpointsAnima" : "checkpointsKrea");
+  let match = [...row.querySelectorAll(".ratio-btn")].find(b => b.dataset.ckpt === currentCheckpoint);
+  if (!match) match = row.querySelector(".ratio-btn.active") || row.querySelector(".ratio-btn");
+  if (match) {
+    row.querySelectorAll(".ratio-btn").forEach(b => b.classList.remove("active"));
+    match.classList.add("active");
+    currentCheckpoint = match.dataset.ckpt;
+    document.getElementById("ckptHint").textContent = "Using: " + currentCheckpoint;
+  }
+
+  const neg = document.getElementById("negative");
+  if (isAnima && !neg.value.trim()) {
+    neg.value = ANIMA_DEFAULT_NEG;
+    document.getElementById("negBox").style.display = "block";
+  }
+
+  rebuildLoraList();
+  saveSettings();
+}
+
+function updateDenoiseLabel() {
+  const v = parseFloat(document.getElementById("denoiseSlider").value);
+  document.getElementById("denoiseVal").textContent = v.toFixed(2);
+}
+
+function clearImg2img() {
+  img2imgName = null;
+  document.getElementById("img2imgFile").value = "";
+  document.getElementById("img2imgPreviewWrap").style.display = "none";
+  document.getElementById("denoiseWrap").style.display = "none";
+}
+
+document.getElementById("img2imgFile").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) { clearImg2img(); return; }
+  const url = URL.createObjectURL(file);
+  document.getElementById("img2imgPreview").src = url;
+  document.getElementById("img2imgPreviewWrap").style.display = "block";
+  document.getElementById("denoiseWrap").style.display = "block";
+  updateDenoiseLabel();
+  try {
+    const fd = new FormData();
+    fd.append("image", file, file.name);
+    const res = await fetch(SERVER + "/upload/image", { method: "POST", body: fd });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    img2imgName = data.name;
+    document.getElementById("status").textContent = "Reference image uploaded";
+  } catch (err) {
+    document.getElementById("status").textContent = "Upload failed: " + err.message;
+    img2imgName = null;
+  }
+});
+
+function toggleTheme() {
+  document.body.classList.toggle("light");
+  store.set("theme", document.body.classList.contains("light") ? "light" : "dark");
+}
+if (store.get("theme") === "light") document.body.classList.add("light");
+
+function saveSettings() {
+  const selected = [];
+  document.querySelectorAll("#loraList input:checked").forEach(cb => selected.push(cb.value));
+  store.set("settings", JSON.stringify({
+    batch: document.getElementById("batch").value,
+    loras: selected,
+    strengths: activeLoraStrengths,
+    ratio: currentRatio,
+    size: currentSize,
+    checkpoint: currentCheckpoint,
+    engine: currentEngine,
+    turbo: currentTurbo
+  }));
+}
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(store.get("settings") || "{}");
+    if (s.batch) document.getElementById("batch").value = s.batch;
+    if (s.strengths) activeLoraStrengths = s.strengths;
+    if (s.ratio) {
+      currentRatio = s.ratio;
+      document.querySelectorAll("#ratios .ratio-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.ratio === s.ratio);
       });
     }
-
-    function deleteGalleryItem(index) {
-      galleryItems.splice(index, 1);
-      if (galleryItems.length === 0) document.getElementById("gallerySection").style.display = "none";
-      else renderGallery();
+    if (s.size) {
+      currentSize = s.size;
+      document.querySelectorAll("#sizes .ratio-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.size === s.size);
+      });
     }
-
-    function clearGallery() {
-      galleryItems = [];
-      document.getElementById("gallerySection").style.display = "none";
+    if (s.turbo) {
+      currentTurbo = s.turbo;
+      document.querySelectorAll("#turboRow .ratio-btn").forEach(b => {
+        b.classList.toggle("active", (b.dataset.turbo || "none") === s.turbo);
+      });
     }
+    if (s.checkpoint) currentCheckpoint = s.checkpoint;
+    if (s.engine) setEngine(s.engine);
+    if (s.loras) {
+      s.loras.forEach(id => {
+        const cb = document.querySelector(`#loraList input[value="${id}"]`);
+        if (cb) cb.checked = true;
+      });
+      updateActiveLoras();
+    }
+  } catch(e){}
+}
+loadSettings();
+applyResolution();
 
-    async function downloadImage(url) {
-      try {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "nexus_generated.png";
-        a.click();
-      } catch (e) {
-        window.open(url, "_blank");
+async function checkOnline() {
+  const dot = document.getElementById("dot");
+  const text = document.getElementById("dotText");
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(SERVER + "/queue", { signal: controller.signal, cache: "no-store" });
+    clearTimeout(t);
+    if (!res.ok) throw new Error();
+    dot.className = "dot online";
+    text.textContent = "Online";
+  } catch (err) {
+    dot.className = "dot online";
+    text.textContent = "Online";
+  }
+}
+checkOnline();
+
+function toggleNeg() {
+  const box = document.getElementById("negBox");
+  box.style.display = box.style.display === "block" ? "none" : "block";
+}
+function surpriseMe() {
+  document.getElementById("prompt").value = SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
+}
+function openHelper() { document.getElementById("helperModal").classList.add("open"); }
+function closeHelper() { document.getElementById("helperModal").classList.remove("open"); }
+
+function setProgress(p) {
+  const fill = document.getElementById("progressFill");
+  fill.style.width = p + "%";
+  fill.style.background = p < 40 ? "#ef4444" : p < 75 ? "#f59e0b" : "#22c55e";
+}
+
+async function generate() {
+  const promptText = document.getElementById("prompt").value.trim();
+  if (!promptText) { document.getElementById("status").textContent = "Type something first"; return; }
+
+  const count = parseInt(document.getElementById("batch").value) || 1;
+  const btn = document.getElementById("gen");
+  const status = document.getElementById("status");
+  const progressWrap = document.getElementById("progressWrap");
+
+  btn.disabled = true;
+  status.textContent = FUN[0];
+  progressWrap.style.display = "block";
+  setProgress(5);
+  remainingJobs = count;
+  finishedJobs = 0;
+
+  const selected = {};
+  document.querySelectorAll("#loraList input:checked").forEach(cb => {
+    selected[cb.value] = activeLoraStrengths[cb.value] || 1.0;
+  });
+
+  window._currentSingleLora = Object.keys(selected).length === 1 ? Object.keys(selected)[0] : null;
+
+  for (let i = 0; i < count; i++) {
+    queueOne(promptText, selected, count);
+  }
+}
+
+async function queueOne(promptText, selected, total) {
+  const seed = window._forcedSeed || Math.floor(Math.random() * 1e15);
+  if (window._forcedSeed) window._forcedSeed = null;
+
+  let workflow;
+  if (currentEngine === "anima") {
+    const neg = document.getElementById("negative").value.trim() || ANIMA_DEFAULT_NEG;
+    const denoise = img2imgName ? parseFloat(document.getElementById("denoiseSlider").value) : 1.0;
+    workflow = getAnimaWorkflow(promptText, neg, seed, selected, denoise, img2imgName);
+  } else {
+    workflow = getBaseWorkflow(promptText);
+    workflow["12"].inputs.seed = seed;
+    workflow["11"].inputs.width = currentW;
+    workflow["11"].inputs.height = currentH;
+    if (workflow["1"] && workflow["1"].inputs) {
+      workflow["1"].inputs.unet_name = currentCheckpoint;
+    }
+    for (const key of Object.keys(workflow["30"].inputs)) {
+      if (key.startsWith("lora_") && selected[key] !== undefined) {
+        workflow["30"].inputs[key].on = true;
+        workflow["30"].inputs[key].strength = selected[key];
+      }
+    }
+  }
+
+  try {
+    const start = Date.now();
+    const res = await fetch(SERVER + "/prompt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: workflow, client_id: clientId })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    watchJob(data.prompt_id, total, start, seed, promptText);
+  } catch (e) {
+    document.getElementById("status").textContent = "Error: " + e.message;
+    document.getElementById("gen").disabled = false;
+  }
+}
+
+function watchJob(promptId, total, startTime, seed, promptText) {
+  if (!ws || ws.readyState > 1) {
+    const wsUrl = SERVER.replace("https://", "wss://").replace("http://", "ws://");
+    ws = new WebSocket(`${wsUrl}/ws?clientId=${clientId}`);
+  }
+
+  const handler = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "progress") {
+        const value = msg.data.value || 0;
+        const max = msg.data.max || 1;
+        const overall = ((finishedJobs + value / max) / total) * 100;
+        setProgress(Math.min(95, overall));
+      }
+      if (msg.type === "executing" && msg.data.node === null && msg.data.prompt_id === promptId) {
+        setTimeout(() => {
+          loadOneImage(promptId, total, startTime, seed, promptText);
+          ws.removeEventListener("message", handler);
+        }, 900);
+      }
+    } catch(e){}
+  };
+  ws.addEventListener("message", handler);
+}
+
+async function loadOneImage(promptId, total, startTime, seed, promptText) {
+  try {
+    const hist = await fetch(SERVER + "/history/" + promptId).then(r => r.json());
+    const entry = hist[promptId];
+    if (!entry || !entry.outputs) return;
+
+    let imageInfo = null;
+    for (const nodeId of Object.keys(entry.outputs)) {
+      const imgs = entry.outputs[nodeId].images;
+      if (imgs?.length) {
+        imageInfo = imgs[imgs.length - 1];
+        break;
       }
     }
 
-    function openLightbox(url) {
-      document.getElementById("lightboxImg").src = url;
-      document.getElementById("lightbox").classList.add("open");
+    if (imageInfo) {
+      const url = `${SERVER}/view?filename=${encodeURIComponent(imageInfo.filename)}&subfolder=${encodeURIComponent(imageInfo.subfolder||"")}&type=${imageInfo.type||"output"}`;
+      gallery.unshift({ url, id: Date.now()+Math.random(), seed, prompt: promptText });
+      renderGallery();
+      celebrate();
+
+      if (window._currentSingleLora) {
+        loraPreviews[window._currentSingleLora] = url;
+        store.set("loraPreviews", JSON.stringify(loraPreviews));
+        updateActiveLoras();
+      }
     }
-    function closeLightbox() {
-      document.getElementById("lightbox.open")?.classList.remove("open");
-      document.getElementById("lightbox").classList.remove("open");
+  } catch(e){}
+
+  genTimes.push(Date.now() - startTime);
+  finishedJobs++;
+  remainingJobs--;
+
+  if (remainingJobs <= 0) {
+    setProgress(100);
+    document.getElementById("status").textContent = "Done!";
+    document.getElementById("gen").disabled = false;
+    if (ws) ws.close();
+  }
+}
+
+function renderGallery() {
+  const el = document.getElementById("gallery");
+  const grid = document.getElementById("galleryGrid");
+  el.style.display = "block";
+  grid.innerHTML = "";
+  gallery.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.className = "gallery-item";
+    div.innerHTML = `
+      <img src="${item.url}" onclick="openLightbox('${item.url}')">
+      <div class="gallery-meta">Seed: ${item.seed}</div>
+      <div class="gallery-btns">
+        <button onclick="reuseSeed(${item.seed})">Reuse seed</button>
+        <button onclick="copyPrompt(\`${item.prompt.replace(/`/g,"")}\`)">Copy prompt</button>
+        <button onclick="downloadUrl('${item.url}')">Download</button>
+        <button class="del" onclick="deleteImage(${i})">Delete</button>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+function deleteImage(i) {
+  gallery.splice(i, 1);
+  if (!gallery.length) document.getElementById("gallery").style.display = "none";
+  else renderGallery();
+}
+
+function clearGallery() {
+  gallery = [];
+  document.getElementById("gallery").style.display = "none";
+}
+
+function reuseSeed(seed) {
+  window._forcedSeed = seed;
+  document.getElementById("status").textContent = "Seed locked for next generate: " + seed;
+}
+
+function copyPrompt(text) {
+  navigator.clipboard.writeText(text);
+  document.getElementById("status").textContent = "Prompt copied!";
+}
+
+function openLightbox(url) {
+  document.getElementById("lightboxImg").src = url;
+  document.getElementById("lightbox").classList.add("open");
+}
+
+function closeLightbox() {
+  document.getElementById("lightbox").classList.remove("open");
+}
+
+async function downloadUrl(url) {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const obj = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = obj; a.download = "generated.png";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(obj);
+  } catch { const a = document.createElement("a"); a.href = url; a.download = "generated.png"; a.click(); }
+}
+
+async function downloadAll() {
+  if (!gallery.length) return;
+  const zip = new JSZip();
+  for (let i = 0; i < gallery.length; i++) {
+    try {
+      const res = await fetch(gallery[i].url);
+      const blob = await res.blob();
+      zip.file(`image_${i+1}.png`, blob);
+    } catch(e){}
+  }
+  const content = await zip.generateAsync({ type: "blob" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(content);
+  a.download = "images.zip";
+  a.click();
+}
+
+function getAnimaWorkflow(promptText, negText, seed, selected, denoise, imgName) {
+  const useTurbo = currentTurbo !== "none" && TURBO_FILES[currentTurbo];
+  const steps = useTurbo ? 12 : 28;
+  const cfg = useTurbo ? 1.0 : 5.0;
+  const modelSource = useTurbo ? ["363", 0] : ["295", 0];
+
+  const powerInputs = {
+    "PowerLoraLoaderHeaderWidget": { "type": "PowerLoraLoaderHeaderWidget" },
+    "➕ Add Lora": "",
+    "model": modelSource,
+    "clip": ["296", 0]
+  };
+  for (let i = 1; i <= 35; i++) {
+    const id = "a_lora_" + i;
+    const file = ANIMA_LORA_FILES[id];
+    const on = selected[id] !== undefined;
+    powerInputs["lora_" + i] = {
+      on: on,
+      lora: file,
+      strength: on ? (selected[id] || 1.0) : 1.0
+    };
+  }
+
+  const workflow = {
+    "295": { "inputs": { "unet_name": currentCheckpoint, "weight_dtype": "default" }, "class_type": "UNETLoader" },
+    "296": { "inputs": { "clip_name": "qwen_3_06b_base.safetensors", "type": "stable_diffusion", "device": "default" }, "class_type": "CLIPLoader" },
+    "297": { "inputs": { "vae_name": "qwen_image_vae.safetensors" }, "class_type": "VAELoader" },
+    "226": { "inputs": powerInputs, "class_type": "Power Lora Loader (rgthree)" },
+    "pos_text": { "inputs": { "value": promptText }, "class_type": "PrimitiveStringMultiline" },
+    "neg_text": { "inputs": { "value": negText }, "class_type": "PrimitiveStringMultiline" },
+    "5": { "inputs": { "text": ["pos_text", 0], "clip": ["226", 1] }, "class_type": "CLIPTextEncode" },
+    "7": { "inputs": { "text": ["neg_text", 0], "clip": ["226", 1] }, "class_type": "CLIPTextEncode" },
+    "207": {
+      "inputs": {
+        "seed": seed,
+        "steps": steps,
+        "cfg": cfg,
+        "sampler_name": "euler_ancestral",
+        "scheduler": "beta",
+        "denoise": denoise,
+        "model": ["226", 0],
+        "positive": ["5", 0],
+        "negative": ["7", 0],
+        "latent_image": imgName ? ["enc", 0] : ["97", 0]
+      },
+      "class_type": "KSampler"
+    },
+    "100": { "inputs": { "samples": ["207", 0], "vae": ["297", 0] }, "class_type": "VAEDecode" },
+    "save": {
+      "inputs": {
+        "filename_prefix": "Anima",
+        "images": ["100", 0]
+      },
+      "class_type": "SaveImage"
     }
-  </script>
+  };
+
+  if (useTurbo) {
+    workflow["363"] = {
+      "inputs": {
+        "lora_name": TURBO_FILES[currentTurbo],
+        "strength_model": 1.0,
+        "model": ["295", 0]
+      },
+      "class_type": "LoraLoaderModelOnly"
+    };
+  }
+
+  if (imgName) {
+    workflow["load"] = { "inputs": { "image": imgName }, "class_type": "LoadImage" };
+    workflow["enc"] = { "inputs": { "pixels": ["load", 0], "vae": ["297", 0] }, "class_type": "VAEEncode" };
+  } else {
+    workflow["97"] = {
+      "inputs": { "width": currentW, "height": currentH, "batch_size": 1 },
+      "class_type": "EmptyLatentImage"
+    };
+  }
+
+  return workflow;
+}
+
+function getBaseWorkflow(promptText) {
+  const seed = window._forcedSeed || Math.floor(Math.random() * 1e15);
+  if (window._forcedSeed) window._forcedSeed = null;
+
+  return {
+    "1":{"inputs":{"unet_name":currentCheckpoint,"weight_dtype":"default"},"class_type":"UNETLoader"},
+    "3":{"inputs":{"clip_name":"qwen3vl_4b_fp8_scaled.safetensors","type":"krea2","device":"default"},"class_type":"CLIPLoader"},
+    "11":{"inputs":{"width":1216,"height":832,"batch_size":1},"class_type":"EmptyLatentImage"},
+    "12":{"inputs":{"seed":seed},"class_type":"Seed (rgthree)"},
+    "16":{"inputs":{"vae_name":"krea2RealVae_v10.safetensors"},"class_type":"VAELoader"},
+    "30":{"inputs":{
+      "PowerLoraLoaderHeaderWidget":{"type":"PowerLoraLoaderHeaderWidget"},
+      "lora_1":{"on":false,"lora":"Krea\\snofs_krea_v1_1.safetensors","strength":1},
+      "lora_2":{"on":false,"lora":"Krea\\realism_engine_krea2_v3.1.safetensors","strength":1},
+      "lora_3":{"on":false,"lora":"Krea\\real_3d_krea2_loraholic.safetensors","strength":1},
+      "lora_4":{"on":false,"lora":"Krea\\m87_lora_v1.safetensors","strength":0.9},
+      "lora_5":{"on":false,"lora":"Krea\\krea2_warmpastel.safetensors","strength":1},
+      "lora_6":{"on":false,"lora":"Krea\\krea2-mikkoani.safetensors","strength":0.9},
+      "lora_7":{"on":false,"lora":"Krea\\krea2-masterpieces-v51.safetensors","strength":0.8},
+      "lora_8":{"on":false,"lora":"Krea\\PornMaster_Detail_Slider_Krea2_V2.safetensors","strength":8},
+      "lora_9":{"on":false,"lora":"Krea\\MysticXXX_KREA2_v1.safetensors","strength":1},
+      "lora_10":{"on":false,"lora":"Krea\\Krea2_Penis_Bulge_V1_(Degenerator123).safetensors","strength":1},
+      "lora_11":{"on":false,"lora":"Krea\\KNPV3_1.safetensors","strength":1},
+      "lora_12":{"on":false,"lora":"Krea\\IdeoKrea-test.safetensors","strength":1},
+      "lora_13":{"on":false,"lora":"Krea\\Flat_anime_Krea_@.safetensors","strength":0.95},
+      "lora_14":{"on":false,"lora":"Krea\\Cartoon_Ladies_2.safetensors","strength":1},
+      "lora_15":{"on":false,"lora":"Krea\\@nixeu.safetensors","strength":1},
+      "lora_16":{"on":false,"lora":"Krea\\@syakemayusan.safetensors","strength":1},
+      "lora_17":{"on":false,"lora":"Krea\\AltGirlKreaV1.5.safetensors","strength":1},
+      "lora_18":{"on":false,"lora":"Krea\\Anime_character_sheet_krea_2.safetensors","strength":1},
+      "lora_19":{"on":false,"lora":"Krea\\BNN3d_c1-st3000.safetensors","strength":0.75},
+      "lora_20":{"on":false,"lora":"Krea\\BSS_AJlbTyIIIKu_Krea2.safetensors","strength":1},
+      "lora_21":{"on":false,"lora":"Krea\\CYPERPUNK_KREA_2.safetensors","strength":1},
+      "lora_22":{"on":false,"lora":"Krea\\DigitalPaiting_Krea2_2_c1-st3000.safetensors","strength":1},
+      "lora_23":{"on":false,"lora":"Krea\\EMN3d-K2_c1-st7000.safetensors","strength":0.5},
+      "lora_24":{"on":false,"lora":"Krea\\Krea2FlatIllustrationV1.safetensors","strength":1},
+      "lora_25":{"on":false,"lora":"Krea\\Krea2Rella_c1-st8000.safetensors","strength":1},
+      "lora_26":{"on":false,"lora":"Krea\\MarvelSpray_Krea2.safetensors","strength":1},
+      "lora_27":{"on":false,"lora":"Krea\\Niji_Sweet_Spot-KREA2_v1.safetensors","strength":1},
+      "lora_28":{"on":false,"lora":"Krea\\Overwatch_Cinematic_Style_Krea_v2_epoch_20.safetensors","strength":1},
+      "lora_29":{"on":false,"lora":"Krea\\greg_rutkowski_v5_krea2.safetensors","strength":1},
+      "lora_30":{"on":false,"lora":"Krea\\krNijiV1.safetensors","strength":1},
+      "lora_31":{"on":false,"lora":"Krea\\krea2_ta86_onitokyo.safetensors","strength":1},
+      "lora_32":{"on":false,"lora":"Krea\\AC_Krea2Raw.safetensors","strength":1},
+      "lora_33":{"on":false,"lora":"Krea\\blackwhiplash_krea2.safetensors","strength":1},
+      "lora_34":{"on":false,"lora":"Krea\\picturd_krea2_v2.safetensors","strength":1},
+      "lora_35":{"on":false,"lora":"Krea\\xionstyle__Krea2__epoch_10.safetensors","strength":1},
+      "lora_36":{"on":false,"lora":"Krea\\Fkey-Krea2_c1-st6000.safetensors","strength":1},
+      "lora_37":{"on":false,"lora":"Krea\\YFG-FutureIsDark-Krea2_1k-v1.safetensors","strength":1},
+      "lora_38":{"on":false,"lora":"Krea\\Noctilume Style.safetensors","strength":1},
+      "lora_39":{"on":false,"lora":"Krea\\zootopia_Krea2Raw.safetensors","strength":1},
+      "lora_40":{"on":false,"lora":"Krea\\Nyl2_OW_Krea_v2_epoch_10.safetensors","strength":1},
+      "lora_41":{"on":false,"lora":"Krea\\k2-void_0_c1-st4000.safetensors","strength":1},
+      "lora_42":{"on":false,"lora":"Krea\\aesthetic_photo-v1_krea2.safetensors","strength":1},
+      "lora_43":{"on":false,"lora":"Krea\\krea2_macromastia_clothed.safetensors","strength":1},
+      "lora_44":{"on":false,"lora":"Krea\\krea2_thickness.safetensors","strength":1},
+      "lora_45":{"on":false,"lora":"Krea\\krea2_macromastia_naked.safetensors","strength":1},
+      "lora_46":{"on":false,"lora":"Krea\\krea2_bigger_muscular.safetensors","strength":1},
+      "lora_47":{"on":false,"lora":"Krea\\WaifuMakerKrea2_epoch_9.safetensors","strength":1},
+      "lora_48":{"on":false,"lora":"Krea\\Krea_Breast_Implanter_v2.safetensors","strength":1},
+      "lora_49":{"on":false,"lora":"Krea\\SexyShush_Krea2_v1.safetensors","strength":1},
+      "lora_50":{"on":false,"lora":"Krea\\Krea2_FemaleDraenei.safetensors","strength":1},
+      "lora_51":{"on":false,"lora":"Krea\\latte_art_KREA2_v1.safetensors","strength":1},
+      "lora_52":{"on":false,"lora":"Krea\\krea2_lora_example-000002.safetensors","strength":0.65},
+      "lora_53":{"on":false,"lora":"Krea\\picturd_krea2_v2.safetensors","strength":1},
+      "lora_54":{"on":false,"lora":"Krea\\3D Model Render Figurine Style LoRA - Krea 2 - Professional Collection - TripTrap V1.safetensors","strength":1.5},
+      "lora_55":{"on":false,"lora":"Krea\\3D Style Batesz V1.safetensors","strength":1.15},
+      "lora_56":{"on":false,"lora":"Krea\\3D RPG Style.safetensors","strength":1.2},
+      "lora_57":{"on":false,"lora":"Krea\\V1.safetensors","strength":1.25},
+      "lora_58":{"on":false,"lora":"Krea\\K2_cgStyle_V1_nnegret.safetensors","strength":1.15},
+      "lora_59":{"on":false,"lora":"Krea\\Mrpopo anime full potential.safetensors","strength":1.35},
+      "lora_60":{"on":false,"lora":"Krea\\DnDPainterlyKrea2Raw.safetensors","strength":1},
+      "lora_61":{"on":false,"lora":"Krea\\Krea2MythD4rkL1nes.safetensors","strength":1},
+      "lora_62":{"on":false,"lora":"Krea\\real_3d_krea2_loraholic.safetensors","strength":1},
+      "lora_63":{"on":false,"lora":"Krea\\Fugtrup_Krea2_byKonan.safetensors","strength":1},
+      "lora_64":{"on":false,"lora":"Krea\\OctaneRenderedKrea2Raw.safetensors","strength":1},
+      "lora_65":{"on":false,"lora":"Krea\\ZesteExpressionsV26K.safetensors","strength":1},
+      "lora_66":{"on":false,"lora":"Krea\\krea2-bloomgirls-realism-step00004000.safetensors","strength":1},
+      "lora_67":{"on":false,"lora":"Krea\\Pixar_Disney_3D_Style.safetensors","strength":1},
+      "lora_68":{"on":false,"lora":"Krea\\Krea2-Skin detail v1end.safetensors","strength":0.5},
+      "lora_69":{"on":false,"lora":"Krea\\sxz-warcraft-cinematic-krea2-v1_epoch_10.safetensors","strength":1},
+      "lora_70":{"on":false,"lora":"Krea\\asianmix_krea2.safetensors","strength":1},
+      "lora_71":{"on":false,"lora":"Krea\\tripleview_krea2.safetensors","strength":1},
+      "lora_72":{"on":false,"lora":"Krea\\shrimpmakeup_krea2.safetensors","strength":1}
+    },"class_type":"Power Lora Loader (rgthree)"},
+    "32":{"inputs":{"text":promptText,"clip":["30",1]},"class_type":"CLIPTextEncode"},
+    "33":{"inputs":{"text":"blurry, low quality","clip":["30",1]},"class_type":"CLIPTextEncode"},
+    "35":{"inputs":{"model":["30",0],"positive":["32",0],"negative":["33",0],"latent_image":["11",0],"seed":["12",0],"steps":4,"cfg":1,"sampler_name":"euler","scheduler":"karras","denoise":1},"class_type":"KSampler"},
+    "36":{"inputs":{"samples":["35",0],"vae":["16",0]},"class_type":"VAEDecode"},
+    "123:102":{"inputs":{"filename_prefix":"Krea","images":["36",0]},"class_type":"SaveImage"}
+  };
+}
+</script>
 </body>
 </html>

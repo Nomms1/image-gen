@@ -443,6 +443,133 @@ button.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
 #turboSection .row{margin-bottom:0}
 </style>
 
+
+<style id="theme-upgrade">
+:root{
+  --ui-mode:"dark";
+  --bg:#070811;--surface:#0d1120;--surface2:#11172a;--border:#252e49;
+  --text:#eef2ff;--muted:#8791ad;--accent:#7562ff;--accent2:#a45cff;
+}
+html[data-theme="light"]{
+  --bg:#f3f6fb;--surface:#ffffff;--surface2:#eef2f8;--border:#d9dfeb;
+  --text:#182033;--muted:#657087;--accent:#5b50e6;--accent2:#8b5cf6;
+}
+html[data-theme="light"] body{
+  background:linear-gradient(135deg,#f8faff,#edf1f8);
+  color:var(--text);
+}
+html[data-theme="light"] body:before{opacity:.08}
+html[data-theme="light"] .card{
+  background:rgba(255,255,255,.9);border-color:#dbe1ed;
+  box-shadow:0 20px 60px rgba(35,47,75,.12);
+}
+html[data-theme="light"] textarea,
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="number"],
+html[data-theme="light"] .lora-search{
+  background:#f8faff!important;color:#182033!important;border-color:#d5ddea!important;
+}
+html[data-theme="light"] .ratio-btn,
+html[data-theme="light"] .tool-btn,
+html[data-theme="light"] .lora-chip{
+  background:#f7f9fd!important;color:#59657d!important;border-color:#d8dfeb!important;
+}
+html[data-theme="light"] #loraList,
+html[data-theme="light"] #checkpointsKrea,
+html[data-theme="light"] #checkpointsAnima,
+html[data-theme="light"] #turboSection{
+  background:#f7f9fd!important;border-color:#d9dfeb!important;
+}
+
+/* Krea: midnight indigo / electric violet */
+body.krea-theme{
+  --accent:#6958ff;--accent2:#a05cff;
+}
+body.krea-theme .logo,
+body.krea-theme .ratio-btn.active,
+body.krea-theme .lora-chip.active,
+body.krea-theme button.primary{
+  background:linear-gradient(135deg,#5147d9,#8b5cf6)!important;
+}
+body.krea-theme #engineSwitch button.active{
+  background:linear-gradient(135deg,#5147d9,#8b5cf6)!important;
+}
+body.krea-theme .card{
+  box-shadow:0 24px 80px rgba(44,35,120,.22),inset 0 1px rgba(255,255,255,.035);
+}
+
+/* Anima: deeper violet + blue */
+body.anima-theme{
+  --accent:#8b5cf6;--accent2:#3b82f6;
+  background:
+    radial-gradient(900px 550px at 0 -10%,rgba(139,92,246,.25),transparent 60%),
+    radial-gradient(850px 550px at 100% 0,rgba(59,130,246,.20),transparent 58%),
+    linear-gradient(135deg,#080711,#0b1020 58%,#080a16);
+}
+body.anima-theme .logo,
+body.anima-theme .ratio-btn.active,
+body.anima-theme .lora-chip.active,
+body.anima-theme button.primary,
+body.anima-theme #engineSwitch button.active{
+  background:linear-gradient(135deg,#8b5cf6,#3b82f6)!important;
+}
+body.anima-theme .card{
+  border-color:#30365c;
+  box-shadow:0 24px 80px rgba(74,52,170,.26),inset 0 1px rgba(255,255,255,.035);
+}
+body.anima-theme #checkpointsAnima{
+  border-color:#4b3f78;
+}
+
+/* Theme button */
+#themeToggle{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:42px;height:42px;border-radius:13px;border:1px solid #2a3552;
+  background:#0c1120;color:#dfe5ff;cursor:pointer;font-size:18px;
+  transition:.18s ease;
+}
+#themeToggle:hover{transform:translateY(-1px);border-color:#7f72ff}
+html[data-theme="light"] #themeToggle{background:#fff;color:#30384d;border-color:#d5ddea}
+#themeToggle .sun{display:none}
+html[data-theme="light"] #themeToggle .moon{display:none}
+html[data-theme="light"] #themeToggle .sun{display:inline}
+
+/* Engine selector gets its own identity */
+#engineSwitch button[data-engine="krea"].active{
+  background:linear-gradient(135deg,#5147d9,#8b5cf6)!important;
+}
+#engineSwitch button[data-engine="anima"].active{
+  background:linear-gradient(135deg,#8b5cf6,#3b82f6)!important;
+}
+</style>
+<script>
+(function(){
+  const saved=localStorage.getItem('forgelab_theme')||'dark';
+  document.documentElement.dataset.theme=saved;
+  function applyEngineTheme(){
+    const isAnima=document.body.classList.contains('anima') ||
+      (typeof currentEngine!=='undefined' && currentEngine==='anima');
+    document.body.classList.toggle('anima-theme',isAnima);
+    document.body.classList.toggle('krea-theme',!isAnima);
+  }
+  window.addEventListener('DOMContentLoaded',()=>{
+    const b=document.createElement('button');
+    b.id='themeToggle';
+    b.title='Toggle light / dark theme';
+    b.innerHTML='<span class="moon">☾</span><span class="sun">☀</span>';
+    const host=document.querySelector('header')||document.body;
+    host.appendChild(b);
+    b.onclick=()=>{
+      const next=document.documentElement.dataset.theme==='light'?'dark':'light';
+      document.documentElement.dataset.theme=next;
+      localStorage.setItem('forgelab_theme',next);
+    };
+    applyEngineTheme();
+    setInterval(applyEngineTheme,300);
+  });
+})();
+</script>
+
 </head>
 <body>
 

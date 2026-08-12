@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generate</title>
+<title>ForgeLab — Krea + Anima</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root {
@@ -337,6 +337,112 @@
     color: #fff; font-size: 1.8rem; cursor: pointer;
   }
 </style>
+
+<style id="forge-remix">
+:root{
+  --bg:#070811;--card:#0d1120;--border:#202943;--text:#eef2ff;--muted:#8791ad;
+  --accent:#8b5cf6;--krea:#6d5dfc;--anima:#ec4899;--good:#55e6a5;
+}
+*{box-sizing:border-box}
+body{
+  background:
+    radial-gradient(900px 500px at 8% -10%,rgba(109,93,252,.22),transparent 60%),
+    radial-gradient(800px 500px at 100% 8%,rgba(236,72,153,.14),transparent 58%),
+    linear-gradient(135deg,#05060b,#090c15 55%,#070811);
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  min-height:100vh;
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+.card{
+  background:linear-gradient(180deg,rgba(17,22,38,.96),rgba(8,11,20,.96));
+  border:1px solid #252e49;border-radius:22px;
+  box-shadow:0 24px 80px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.035);
+}
+h1{font-size:1.45rem;font-weight:800;letter-spacing:-.03em}
+label{color:#aeb7ce;font-weight:700;letter-spacing:.08em}
+textarea,input[type="text"],input[type="number"],.lora-search{
+  background:#080b14!important;border:1px solid #252e49!important;
+  color:#f4f6ff!important;border-radius:13px!important;
+}
+textarea:focus,input:focus,.lora-search:focus{border-color:#806cff!important;box-shadow:0 0 0 3px #806cff18}
+.row{gap:8px}
+.ratio-btn,.batch-select,.tool-btn,.lora-chip{
+  background:#0a0e19!important;border:1px solid #252e49!important;
+  color:#aeb7ce!important;border-radius:12px!important;
+  transition:.15s ease;box-shadow:none!important;
+}
+.ratio-btn:hover,.tool-btn:hover,.lora-chip:hover{
+  transform:translateY(-1px);border-color:#596887!important;color:#fff!important;
+}
+.ratio-btn.active,.lora-chip.active{
+  background:linear-gradient(135deg,#715cff,#9b5cff)!important;
+  border-color:#a18cff!important;color:#fff!important;
+  box-shadow:0 7px 24px #765cff24!important;
+}
+body.anima{
+  --bg:#090710;--card:#120c19;--border:#39244e;--text:#f8efff;--muted:#aa8fbd;--accent:#ec4899;
+}
+body.anima .ratio-btn.active,body.anima .lora-chip.active{
+  background:linear-gradient(135deg,#d63d8f,#8f4dff)!important;
+}
+#engineSwitch{
+  background:linear-gradient(90deg,#11172a,#0c1020)!important;
+  border:1px solid #283451!important;border-radius:16px!important;
+  padding:6px!important;gap:6px!important;
+}
+#engineSwitch button{
+  border-radius:11px!important;border:1px solid transparent!important;
+  font-weight:850!important;padding:11px 18px!important;
+}
+#engineSwitch button.active{
+  background:linear-gradient(135deg,#6d5dfc,#9c5cff)!important;
+  box-shadow:0 8px 25px #765cff30!important;
+}
+body.anima #engineSwitch button.active{
+  background:linear-gradient(135deg,#d94691,#8b5cf6)!important;
+}
+#checkpointsKrea,#checkpointsAnima{
+  background:#080b14;border:1px solid #222b43;border-radius:14px;padding:7px;
+}
+#checkpointsKrea .ratio-btn,#checkpointsAnima .ratio-btn{flex:1}
+#loraList{
+  background:linear-gradient(180deg,#0a0e18,#080b12)!important;
+  border:1px solid #222b43!important;border-radius:14px!important;
+}
+.lora-item{padding:8px 4px!important}
+.active-lora-card{
+  background:linear-gradient(135deg,#11172a,#0b0f1b)!important;
+  border-color:#2b3754!important;border-radius:14px!important;
+}
+button.primary{
+  background:linear-gradient(135deg,#6d5dfc,#a05cff)!important;
+  border:0!important;border-radius:13px!important;
+  box-shadow:0 12px 30px #765cff28;
+}
+button.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+#status{font-weight:650}
+.progress-bar{background:#171d2d!important}
+.gallery img{border:1px solid #2a3550!important;border-radius:14px!important}
+#passwordGate{background:radial-gradient(circle at 50% 20%,#17112b,#05060a 60%)!important}
+.gate-box{
+  background:linear-gradient(180deg,#11162a,#090c15)!important;
+  border:1px solid #2a3552!important;border-radius:22px!important;
+  box-shadow:0 30px 90px #000b!important;
+}
+.gate-box h2{font-weight:800!important}
+#turboSection{
+  background:#0a0e19;border:1px solid #2b3450;border-radius:14px;
+  padding:12px;margin-bottom:14px;
+}
+#turboSection .row{margin-bottom:0}
+</style>
+
 </head>
 <body>
 
@@ -396,7 +502,7 @@
     <button class="ratio-btn" data-ckpt="waiANIMA_v10Base10.safetensors">WAI</button>
     <button class="ratio-btn" data-ckpt="JANIMA_v10.safetensors">JANIMA</button>
     <button class="ratio-btn" data-ckpt="pieModelsAnima_cream.safetensors">Pie Cream</button>
-    <button class="ratio-btn" data-ckpt="reanimate_v20.safetensors">Reanimate</button>
+    <button class="ratio-btn" data-ckpt="reanimate_v20.safetensors">REanimaTE</button>
   </div>
   <div class="lora-help" id="ckptHint" style="margin-top:-6px;margin-bottom:14px">Using: DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors</div>
 

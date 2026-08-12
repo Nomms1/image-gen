@@ -58,7 +58,6 @@
       transition: background 0.3s ease, color 0.3s ease;
     }
 
-    /* Top Navigation Bar */
     .top-bar {
       position: fixed; top: 16px; left: 24px; right: 24px;
       display: flex; justify-content: space-between; align-items: center;
@@ -83,7 +82,6 @@
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
     .dot.online { background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.5); }
 
-    /* Main Container */
     .container { width: 100%; max-width: 800px; margin-top: 50px; }
     
     .panel {
@@ -113,12 +111,17 @@
     }
     .pill-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-    /* Sliders & Controls */
     .slider-group { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; }
     .slider-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
     input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
-    /* Action Button */
+    .dropzone {
+      border: 2px dashed var(--border); border-radius: 12px; padding: 20px;
+      text-align: center; background: var(--bg); color: var(--muted); font-size: 0.85rem;
+      cursor: pointer; margin-bottom: 16px; transition: border-color 0.2s;
+    }
+    .dropzone:hover { border-color: var(--accent); }
+
     .btn-primary {
       width: 100%; background: var(--accent); color: #fff; border: none;
       border-radius: 12px; padding: 14px; font-size: 1rem; font-weight: 600;
@@ -127,12 +130,10 @@
     .btn-primary:hover { background: var(--accent-hover); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Progress & Status */
     .status-text { font-size: 0.85rem; color: var(--muted); margin-top: 14px; text-align: center; min-height: 1.2em; }
     .progress-bar-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 8px; display: none; }
     .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s ease; }
 
-    /* Gallery Grid */
     .gallery { display: none; margin-top: 24px; }
     .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
@@ -141,7 +142,6 @@
     .gallery-actions { position: absolute; bottom: 8px; right: 8px; display: flex; gap: 6px; }
     .gallery-actions button { background: rgba(0,0,0,0.7); border: none; color: #fff; padding: 4px 8px; font-size: 0.7rem; border-radius: 6px; }
 
-    /* Modal Wrapper */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
       z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
@@ -149,7 +149,6 @@
     .modal-overlay.open { display: flex; }
     .modal { background: var(--card); border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 440px; padding: 24px; }
     
-    /* Lightbox */
     .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: none; align-items: center; justify-content: center; }
     .lightbox.open { display: flex; }
     .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
@@ -157,7 +156,6 @@
 </head>
 <body>
 
-  <!-- Top Navigation Control Bar -->
   <div class="top-bar">
     <div class="nav-group">
       <button onclick="toggleTheme()">Theme</button>
@@ -172,10 +170,16 @@
   <div class="container">
     <div class="panel">
       <h1>Gemini Studio Nexus</h1>
-      <p class="subtitle">Complete client-side ComfyUI control matrix with absolute backend control.</p>
+      <p class="subtitle">Unified Anima & Krea Master Pipeline Control Matrix.</p>
+
+      <label>Engine Backend Model</label>
+      <div class="row" id="engineSelection">
+        <button class="pill-btn" data-engine="krea" onclick="setEngine('krea')">Krea Turbo</button>
+        <button class="pill-btn active" data-engine="anima" onclick="setEngine('anima')">Anima Studio</button>
+      </div>
 
       <label>Prompt Description</label>
-      <textarea id="promptInput" placeholder="An epic cinematic shot of a futuristic metropolis, volumetric lighting, high detail..."></textarea>
+      <textarea id="promptInput" placeholder="Masterpiece, best quality, absurd, cinematic composition..."></textarea>
 
       <div class="row">
         <button class="pill-btn" onclick="surprisePrompt()">🎲 Randomize Prompt</button>
@@ -184,30 +188,33 @@
 
       <div id="negativeContainer" style="display:none; margin-bottom: 16px;">
         <label>Negative Prompt</label>
-        <textarea id="negativeInput" placeholder="blurry, low quality, artifacts, watermark..." style="min-height: 60px;"></textarea>
+        <textarea id="negativeInput" placeholder="worst quality, low quality, blurry, bad anatomy..." style="min-height: 60px;"></textarea>
       </div>
 
-      <label>Engine Backend Model</label>
-      <div class="row" id="engineSelection">
-        <button class="pill-btn active" data-engine="krea" onclick="setEngine('krea')">Krea Turbo</button>
-        <button class="pill-btn" data-engine="anima" onclick="setEngine('anima')">Anima Studio</button>
+      <!-- Img2Img Dynamic Upload Zone -->
+      <label>Pipeline Mode (Text-to-Image / Image-to-Image)</label>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('imageUpload').click()">
+        <span id="uploadLabel">📁 Click or drop source image here for Img2Img (Optional)</span>
+        <input type="file" id="imageUpload" accept="image/*" style="display:none" onchange="handleImageSelection(this)">
+      </div>
+      <div id="imagePreviewContainer" style="display:none; margin-bottom: 16px; align-items: center; gap: 10px;">
+        <span id="imageFileName" style="font-size: 0.85rem; color: var(--accent);"></span>
+        <button onclick="clearUploadedImage()" style="padding: 2px 8px; font-size: 0.7rem;">Remove Image</button>
       </div>
 
       <label>LoRA Extension Module</label>
       <div class="row">
         <select id="loraSelect" style="flex: 2;">
           <option value="none">None (Bypassed)</option>
-          <option value="add_detail.safetensors">Add Details / High Fidelity</option>
-          <option value="cyberpunk_style.safetensors">Cyberpunk Atmospheric Vibe</option>
         </select>
       </div>
 
       <div class="slider-group">
         <div class="slider-header">
           <label style="margin:0;">LoRA Injection Weight</label>
-          <span id="weightVal" style="color: var(--text); font-weight: 600;">0.80</span>
+          <span id="weightVal" style="color: var(--text); font-weight: 600;">1.00</span>
         </div>
-        <input type="range" id="loraWeight" min="0" max="1" step="0.05" value="0.8">
+        <input type="range" id="loraWeight" min="0" max="2" step="0.05" value="1.0">
       </div>
 
       <label>Aspect Ratio Configuration</label>
@@ -227,7 +234,6 @@
       </div>
     </div>
 
-    <!-- Gallery Output Section -->
     <div class="gallery" id="gallerySection">
       <div class="gallery-header">
         <label>Generated Gallery Output</label>
@@ -237,7 +243,6 @@
     </div>
   </div>
 
-  <!-- Server Configuration Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal">
       <h2 style="font-size: 1.2rem; margin-bottom: 12px;">ComfyUI Host Configuration</h2>
@@ -251,19 +256,136 @@
     </div>
   </div>
 
-  <!-- Lightbox -->
   <div class="lightbox" id="lightbox" onclick="closeLightbox()">
     <img id="lightboxImg" src="">
   </div>
 
   <script>
-    // --- State Management ---
     let serverAddress = localStorage.getItem("comfy_server") || "http://127.0.0.1:8188";
-    let currentEngine = "krea";
+    let currentEngine = "anima"; // Default to Anima pipeline as requested
     let currentRatio = "1:1";
     let activeClientId = "nexus_" + Math.random().toString(36).substring(2, 9);
     let galleryItems = [];
     let activeWs = null;
+    let uploadedImageName = null;
+
+    // Exhaustive LoRA Catalogs parsed directly from your system profiles
+    const loraCatalogs = {
+      anima: [
+        "Anima\\3D_Game_CG_V05.safetensors",
+        "Anima\\9d6_komoreBeams_b01.safetensors",
+        "Anima\\@3danimeface-000006.safetensors",
+        "Anima\\@skintextureV1.safetensors",
+        "Anima\\@fkey-anima-ab1.safetensors",
+        "Anima\\AIIlustOjisan_AnimaB_v01.safetensors",
+        "Anima\\ANIMA_Niji_Sweet_Spot_v4.safetensors",
+        "Anima\\AfroBullStyle_ANIMAv1.safetensors",
+        "Anima\\AnimaB1-NP45iV1.safetensors",
+        "Anima\\Anima_colorfix_v1_by_Volnovik.safetensors",
+        "Anima\\Better Anime Screencap 16.5 V2.safetensors",
+        "Anima\\Dark_Slider_Anima.safetensors",
+        "Anima\\Flatline.safetensors",
+        "Anima\\Hyperrealistic_Anima.safetensors",
+        "Anima\\KMS_BetterDays_ANIMA-ATTEMPT_epoch_12.safetensors",
+        "Anima\\Kotake Standard Anima V1.safetensors",
+        "Anima\\MGE_V7_0_Anima_R7_epoch_2.safetensors",
+        "Anima\\MeIoN_V1_Anima.safetensors",
+        "Anima\\MoriiMee_AnimaV10_byKonan.safetensors",
+        "Anima\\The-Look-Anima3-800.safetensors",
+        "Anima\\TheMilkMan_AnimaP_v03-000020.safetensors",
+        "Anima\\anima-aesthetic-improvement-v1.1.safetensors",
+        "Anima\\anima-highres-aesthetic-boost.safetensors",
+        "Anima\\mixed_styles_anima-base1_v5.safetensors",
+        "Anima\\rendering_detailer_base10-000400.safetensors",
+        "Anima\\violet cinematography-000012.safetensors",
+        "Anima\\GothicNeonAnima.safetensors",
+        "Anima\\ExtremeSizeDiff-V3ANIMA_epoch_8.safetensors",
+        "Anima\\wide_shot-anima.safetensors",
+        "Anima\\rdbt_anima_b1_v0.39.b.safetensors",
+        "Anima\\disney3d-v2-ngai-anima.safetensors",
+        "Anima\\pearly_mario_galaxy.safetensors",
+        "Illustrious\\Anime_artistic_2.safetensors",
+        "Illustrious\\pvc_figure_tf-illust.safetensors",
+        "Anima\\fellatrix_style_anima_goofy.safetensors",
+        "Anima\\anima-turbo-lora-v0.2.safetensors"
+      ],
+      krea: [
+        "Krea\\snofs_krea_v1_1.safetensors",
+        "Krea\\realism_engine_krea2_v3.1.safetensors",
+        "Krea\\real_3d_krea2_loraholic.safetensors",
+        "Krea\\m87_lora_v1.safetensors",
+        "Krea\\krea2_warmpastel.safetensors",
+        "Krea\\krea2-mikkoani.safetensors",
+        "Krea\\krea2-masterpieces-v51.safetensors",
+        "Krea\\PornMaster_Detail_Slider_Krea2_V2.safetensors",
+        "Krea\\MysticXXX_KREA2_v1.safetensors",
+        "Krea\\Krea2_Penis_Bulge_V1_(Degenerator123).safetensors",
+        "Krea\\KNPV3_1.safetensors",
+        "Krea\\IdeoKrea-test.safetensors",
+        "Krea\\Flat_anime_Krea_@.safetensors",
+        "Krea\\Cartoon_Ladies_2.safetensors",
+        "Krea\\@nixeu.safetensors",
+        "Krea\\@syakemayusan.safetensors",
+        "Krea\\AltGirlKrea.safetensors",
+        "Krea\\Anime_character_sheet_krea_2.safetensors",
+        "Krea\\BNN3d_c1-st3000.safetensors",
+        "Krea\\BSS_AJlbTyIIIKu_Krea2.safetensors",
+        "Krea\\CYPERPUNK_KREA_2.safetensors",
+        "Krea\\DigitalPaiting_Krea2_2_c1-st3000.safetensors",
+        "Krea\\EMN3d-K2_c1-st7000.safetensors",
+        "Krea\\Krea2FlatIllustrationV1.safetensors",
+        "Krea\\Krea2Rella_c1-st8000.safetensors",
+        "Krea\\MarvelSpray_Krea2.safetensors",
+        "Krea\\Niji_Sweet_Spot-KREA2_v1.safetensors",
+        "Krea\\Overwatch_Cinematic_Style_Krea_v2_epoch_20.safetensors",
+        "Krea\\greg_rutkowski_v5_krea2.safetensors",
+        "Krea\\krNijiV1.safetensors",
+        "Krea\\krea2_ta86_onitokyo.safetensors",
+        "Krea\\AC_Krea2Raw.safetensors",
+        "Krea\\blackwhiplash_krea2.safetensors",
+        "Krea\\picturd_krea2_v2.safetensors",
+        "Krea\\xionstyle__Krea2__epoch_10.safetensors",
+        "Krea\\Fkey-Krea2_c1-st6000.safetensors",
+        "Krea\\YFG-FutureIsDark-Krea2_1k-v1.safetensors",
+        "Krea\\Noctilume Style.safetensors",
+        "Krea\\zootopia_Krea2Raw.safetensors",
+        "Krea\\Nyl2_OW_Krea_v2_epoch_10.safetensors",
+        "Krea\\k2-void_0_c1-st4000.safetensors",
+        "Krea\\aesthetic_photo-v1_krea2.safetensors",
+        "Krea\\krea2_macromastia_clothed.safetensors",
+        "Krea\\krea2_thickness.safetensors",
+        "Krea\\krea2_macromastia_naked.safetensors",
+        "Krea\\krea2_bigger_muscular.safetensors",
+        "Krea\\WaifuMakerKrea2_epoch_9.safetensors",
+        "Krea\\Krea_Breast_Implanter_v2.safetensors",
+        "Krea\\SexyShush_Krea2_v1.safetensors",
+        "Krea\\Krea2_FemaleDraenei.safetensors",
+        "Krea\\latte_art_KREA2_v1.safetensors",
+        "Krea\\krea2_lora_example-000002.safetensors",
+        "Krea\\3D Model Render Figurine Style LoRA - Krea 2 - Professional Collection - TripTrap V1.safetensors",
+        "Krea\\3D Style Batesz V1.safetensors",
+        "Krea\\3D RPG Style.safetensors",
+        "Krea\\V1.safetensors",
+        "Krea\\K2_cgStyle_V1_nnegret.safetensors",
+        "Krea\\Mrpopo anime full potential.safetensors",
+        "Krea\\DnDPainterlyKrea2Raw.safetensors",
+        "Krea\\Krea2MythD4rkL1nes.safetensors",
+        "Krea\\Fugtrup_Krea2_byKonan.safetensors",
+        "Krea\\OctaneRenderedKrea2Raw.safetensors",
+        "Krea\\ZesteExpressionsV26K.safetensors",
+        "Krea\\krea2-bloomgirls-realism-step00004000.safetensors",
+        "Krea\\Pixar_Disney_3D_Style.safetensors",
+        "Krea\\Krea2-Skin detail v1end.safetensors",
+        "Krea\\sxz-warcraft-cinematic-krea2-v1_epoch_10.safetensors",
+        "Krea\\hina_krea2Turbo_lora_tqd_v4.0.safetensors",
+        "Krea\\krea2_charactersheet_full_v1.safetensors",
+        "Krea\\shrimp_makeup_style_05.safetensors",
+        "Krea\\AltGirlKreaV1.5.safetensors",
+        "Krea\\Playboy-1950s-krea2-v1_000002000.safetensors",
+        "Krea\\The_Body_Version_A_Krea2_Sigmoid_Automagic3_v1_000008500.safetensors",
+        "Krea\\MRB-2_Krea.safetensors"
+      ]
+    };
 
     const dimensionsMap = {
       "1:1": [1024, 1024],
@@ -272,18 +394,27 @@
     };
 
     const surprisePool = [
-      "An intricate crystal cathedral floating in the clouds during an aurora borealis",
-      "A cyberpunk street market glowing with holographic advertisements in deep twilight",
-      "An ethereal forest spirit carved out of ancient amber wood and glowing moss",
-      "A sleek futuristic starcruiser docking inside a massive orbital space station ring"
+      "image of a beautiful woman with purple and orange colored eyes, long white bunny ears, white hair, tight tubetop, open denim shorts, thong visible, gigantic breasts, athletic, wide thighs",
+      "epic cinematic shot of an advanced futuristic metropolis, volumetric lighting, autonomous robotic landscapers, hyper-detailed textures",
+      "ethereal crystal cathedral floating in the clouds during an aurora borealis, intricate architecture, glowing runes"
     ];
 
-    // Live UI updates for sliders
     document.getElementById("loraWeight").addEventListener("input", (e) => {
       document.getElementById("weightVal").textContent = parseFloat(e.target.value).toFixed(2);
     });
 
-    // Theme Handlers
+    function populateLoraDropdown() {
+      const select = document.getElementById("loraSelect");
+      select.innerHTML = '<option value="none">None (Bypassed)</option>';
+      const list = loraCatalogs[currentEngine] || [];
+      list.forEach(loraPath => {
+        const opt = document.createElement("option");
+        opt.value = loraPath;
+        opt.textContent = loraPath.split("\\").pop(); // Clean visible name for UI
+        select.appendChild(opt);
+      });
+    }
+
     function toggleTheme() {
       const isLight = document.body.classList.toggle("light");
       localStorage.setItem("theme", isLight ? "light" : "dark");
@@ -296,6 +427,7 @@
         btn.classList.toggle("active", btn.dataset.engine === engine);
       });
       document.body.classList.toggle("anima", engine === "anima");
+      populateLoraDropdown();
     }
 
     function setRatio(ratio) {
@@ -331,7 +463,43 @@
       closeSettingsModal();
     }
 
-    // --- Connectivity Watcher ---
+    // Image Upload Handler for Img2Img pipelines
+    async function handleImageSelection(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("overwrite", "true");
+
+        document.getElementById("statusText").textContent = "Uploading source image to server...";
+        try {
+          const res = await fetch(`${serverAddress}/upload/image`, {
+            method: "POST",
+            body: formData
+          });
+          if (!res.ok) throw new Error("Upload failed");
+          const data = await res.json();
+          uploadedImageName = data.name;
+          
+          document.getElementById("uploadLabel").style.display = "none";
+          document.getElementById("imageFileName").textContent = `Loaded: ${file.name}`;
+          document.getElementById("imagePreviewContainer").style.display = "flex";
+          document.getElementById("statusText").textContent = "Image ready for Img2Img execution.";
+        } catch (e) {
+          alert("Failed to upload image to ComfyUI host. Check connection.");
+          document.getElementById("statusText").textContent = "Upload failed.";
+        }
+      }
+    }
+
+    function clearUploadedImage() {
+      uploadedImageName = null;
+      document.getElementById("imageUpload").value = "";
+      document.getElementById("uploadLabel").style.display = "block";
+      document.getElementById("imagePreviewContainer").style.display = "none";
+      document.getElementById("statusText").textContent = "Switched back to Text-to-Image mode.";
+    }
+
     async function checkServerStatus() {
       const dot = document.getElementById("connectionDot");
       const text = document.getElementById("connectionText");
@@ -347,8 +515,8 @@
     }
     checkServerStatus();
     setInterval(checkServerStatus, 10000);
+    populateLoraDropdown();
 
-    // --- Core Generation Engine ---
     async function startGeneration() {
       const promptText = document.getElementById("promptInput").value.trim();
       if (!promptText) {
@@ -362,7 +530,7 @@
       const progressBarFill = document.getElementById("progressBarFill");
 
       generateBtn.disabled = true;
-      statusText.textContent = "Compiling ComfyUI pipeline JSON...";
+      statusText.textContent = "Constructing native pipeline execution graph...";
       progressBarWrap.style.display = "block";
       progressBarFill.style.width = "10%";
 
@@ -370,38 +538,148 @@
       const seedVal = Math.floor(Math.random() * 1e15);
       const selectedLora = document.getElementById("loraSelect").value;
       const loraWeight = parseFloat(document.getElementById("loraWeight").value);
+      const negText = document.getElementById("negativeInput").value || "worst quality, low quality, blurry";
 
-      // Modular node definition map
-      let modelOutputNode = ["1", 0];
-      let clipOutputNode = ["2", 0];
-      
-      let workflowNodes = {
-        "1": { inputs: { unet_name: currentEngine === "anima" ? "animaMayhem_v10.safetensors" : "v1-5-pruned-emaonly.safetensors", weight_dtype: "default" }, class_type: "UNETLoader" },
-        "2": { inputs: { clip_name: "clip_l.safetensors", type: "stable_diffusion", device: "default" }, class_type: "CLIPLoader" },
-        "5": { inputs: { width: width, height: height, batch_size: 1 }, class_type: "EmptyLatentImage" },
-        "6": { inputs: { text: promptText, clip: clipOutputNode }, class_type: "CLIPTextEncode" },
-        "7": { inputs: { text: document.getElementById("negativeInput").value || "blurry, low quality, artifacts", clip: clipOutputNode }, class_type: "CLIPTextEncode" },
-        "4": { inputs: { vae_name: "ae.safetensors" }, class_type: "VAELoader" },
-        "8": { inputs: { samples: ["3", 0], vae: ["4", 0] }, class_type: "VAEDecode" },
-        "9": { inputs: { filename_prefix: "GeminiStudioNexus", images: ["8", 0] }, class_type: "SaveImage" }
-      };
+      let workflowNodes = {};
 
-      // Inject LoRA wrapper node if active
-      if (selectedLora !== "none") {
-        workflowNodes["10"] = {
-          inputs: { strength_model: loraWeight, strength_clip: loraWeight, lora_name: selectedLora, model: ["1", 0], clip: ["2", 0] },
-          class_type: "LoraLoader"
+      if (currentEngine === "anima") {
+        // Anima High-Performance Pipeline Blueprint
+        workflowNodes = {
+          "295": { inputs: { unet_name: "animaMayhem_v10.safetensors", weight_dtype: "default" }, class_type: "UNETLoader" },
+          "296": { inputs: { clip_name: "qwen_3_06b_base.safetensors", type: "stable_diffusion", device: "default" }, class_type: "CLIPLoader" },
+          "297": { inputs: { vae_name: "qwen_image_vae.safetensors" }, class_type: "VAELoader" },
+          "114": { inputs: { seed: seedVal }, class_type: "Seed (rgthree)" },
+          "5": { inputs: { text: promptText, clip: selectedLora !== "none" ? ["226", 1] : ["296", 0] }, class_type: "CLIPTextEncode" },
+          "7": { inputs: { text: negText, clip: selectedLora !== "none" ? ["226", 1] : ["296", 0] }, class_type: "CLIPTextEncode" },
+          "29": { inputs: { any_01: ["297", 0] }, class_type: "Any Switch (rgthree)" },
+          "41": {
+            inputs: {
+              filename: "%time_%basemodelname_%seed", path: "AnimaStudio", extension: "png",
+              steps: 12, cfg: 1, modelname: "animaMayhem_v10.safetensors", sampler_name: "euler",
+              scheduler_name: "normal", positive: ["5", 0], negative: ["7", 0], seed_value: ["114", 0],
+              width: width, height: height, lossless_webp: true, quality_jpeg_or_webp: 100,
+              optimize_png: false, counter: 0, denoise: 1, clip_skip: 0, time_format: "%Y-%m-%d-%H%M%S",
+              save_workflow_as_json: false, embed_workflow: false, additional_hashes: "",
+              download_civitai_data: false, easy_remix: true, show_preview: true, custom: "",
+              images: ["100", 0]
+            },
+            class_type: "Image Saver"
+          }
         };
-        modelOutputNode = ["10", 0];
-        clipOutputNode = ["10", 1];
-        workflowNodes["6"].inputs.clip = clipOutputNode;
-        workflowNodes["7"].inputs.clip = clipOutputNode;
-      }
 
-      workflowNodes["3"] = {
-        inputs: { seed: seedVal, steps: 20, cfg: 7.5, sampler_name: "euler", scheduler: "normal", denoise: 1, model: modelOutputNode, positive: ["6", 0], negative: ["7", 0], latent_image: ["5", 0] },
-        class_type: "KSampler"
-      };
+        let baseModelNode = ["295", 0];
+        let baseClipNode = ["296", 0];
+
+        // LoRA Loader injection for Anima
+        if (selectedLora !== "none") {
+          workflowNodes["226"] = {
+            inputs: {
+              PowerLoraLoaderHeaderWidget: { type: "PowerLoraLoaderHeaderWidget" },
+              lora_1: { on: true, lora: selectedLora, strength: loraWeight },
+              "➕ Add Lora": "",
+              model: baseModelNode,
+              clip: baseClipNode
+            },
+            class_type: "Power Lora Loader (rgthree)"
+          };
+          baseModelNode = ["226", 0];
+        }
+
+        if (uploadedImageName) {
+          // Img2Img setup branch
+          workflowNodes["118"] = { inputs: { image: uploadedImageName, upload: "image" }, class_type: "LoadImage" };
+          workflowNodes["119"] = { inputs: { pixels: ["118", 0], vae: ["29", 0] }, class_type: "VAEEncode" };
+          workflowNodes["207"] = {
+            inputs: {
+              add_noise: "enable", noise_seed: ["114", 0], steps: 12, cfg: 1,
+              sampler_name: "euler", scheduler: "normal", start_at_step: 0, end_at_step: 10000,
+              return_with_leftover_noise: "disable", model: baseModelNode, positive: ["5", 0],
+              negative: ["7", 0], latent_image: ["119", 0]
+            },
+            class_type: "KSamplerAdvanced"
+          };
+        } else {
+          // T2I setup branch
+          workflowNodes["97"] = { inputs: { width: width, height: height, batch_size: 1 }, class_type: "EmptyLatentImage" };
+          workflowNodes["207"] = {
+            inputs: {
+              add_noise: "enable", noise_seed: ["114", 0], steps: 12, cfg: 1,
+              sampler_name: "euler", scheduler: "normal", start_at_step: 0, end_at_step: 10000,
+              return_with_leftover_noise: "disable", model: baseModelNode, positive: ["5", 0],
+              negative: ["7", 0], latent_image: ["97", 0]
+            },
+            class_type: "KSamplerAdvanced"
+          };
+        }
+
+        workflowNodes["100"] = { inputs: { samples: ["207", 0], vae: ["29", 0] }, class_type: "VAEDecode" };
+
+      } else {
+        // Krea Turbo Pipeline Blueprint
+        workflowNodes = {
+          "1": { inputs: { unet_name: "DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors", weight_dtype: "default" }, class_type: "UNETLoader" },
+          "3": { inputs: { clip_name: "qwen3vl_4b_fp8_scaled.safetensors", type: "krea2", device: "default" }, class_type: "CLIPLoader" },
+          "16": { inputs: { vae_name: "krea2RealVae_v10.safetensors" }, class_type: "VAELoader" },
+          "12": { inputs: { seed: seedVal }, class_type: "Seed (rgthree)" },
+          "123:8": { inputs: { text: promptText, clip: selectedLora !== "none" ? ["30", 1] : ["3", 0] }, class_type: "CLIPTextEncode" },
+          "123:29": { inputs: { conditioning: ["123:8", 0] }, class_type: "ConditioningZeroOut" }
+        };
+
+        let activeKreaModel = ["1", 0];
+        if (selectedLora !== "none") {
+          workflowNodes["30"] = {
+            inputs: {
+              PowerLoraLoaderHeaderWidget: { type: "PowerLoraLoaderHeaderWidget" },
+              lora_1: { on: true, lora: selectedLora, strength: loraWeight },
+              "➕ Add Lora": "",
+              model: ["1", 0],
+              clip: ["3", 0]
+            },
+            class_type: "Power Lora Loader (rgthree)"
+          };
+          activeKreaModel = ["30", 0];
+        }
+
+        if (uploadedImageName) {
+          // Img2Img path for Krea
+          workflowNodes["img_load"] = { inputs: { image: uploadedImageName, upload: "image" }, class_type: "LoadImage" };
+          workflowNodes["img_enc"] = { inputs: { pixels: ["img_load", 0], vae: ["16", 0] }, class_type: "VAEEncode" };
+          workflowNodes["123:6"] = {
+            inputs: {
+              seed: ["12", 0], steps: 8, cfg: 1, sampler_name: "euler", scheduler: "linear_quadratic",
+              denoise: 0.75, model: activeKreaModel, positive: ["123:8", 0], negative: ["123:29", 0], latent_image: ["img_enc", 0]
+            },
+            class_type: "KSampler"
+          };
+        } else {
+          // T2I path for Krea
+          workflowNodes["11"] = { inputs: { width: width, height: height, batch_size: 1 }, class_type: "EmptyLatentImage" };
+          workflowNodes["123:6"] = {
+            inputs: {
+              seed: ["12", 0], steps: 8, cfg: 1, sampler_name: "euler", scheduler: "linear_quadratic",
+              denoise: 1, model: activeKreaModel, positive: ["123:8", 0], negative: ["123:29", 0], latent_image: ["11", 0]
+            },
+            class_type: "KSampler"
+          };
+        }
+
+        workflowNodes["123:102"] = { inputs: { samples: ["123:6", 0], vae: ["16", 0] }, class_type: "VAEDecode" };
+        workflowNodes["212"] = {
+          inputs: {
+            filename: "%time_%basemodelname_%seed", path: "KreaStudio", extension: "png",
+            lossless_webp: true, quality_jpeg_or_webp: 100, optimize_png: false, embed_workflow: true,
+            save_workflow_as_json: false, counter: 0, time_format: "%Y-%m-%d-%H%M%S", show_preview: false,
+            images: ["123:102", 0],
+            metadata: {
+              modelname: "Kreav2(new)", positive: promptText, negative: negText,
+              width: width, height: height, seed_value: seedVal, steps: 8, cfg: 1,
+              sampler_name: "euler", scheduler_name: "normal", denoise: 1, clip_skip: 0,
+              additional_hashes: "", download_civitai_data: true, easy_remix: true, custom: ""
+            }
+          },
+          class_type: "Image Saver Simple"
+        };
+      }
 
       try {
         statusText.textContent = "Transmitting job payload to active server...";
@@ -471,7 +749,6 @@
       setTimeout(() => { document.getElementById("progressBarWrap").style.display = "none"; }, 1000);
     }
 
-    // --- Gallery Management ---
     function renderGallery() {
       const section = document.getElementById("gallerySection");
       const grid = document.getElementById("galleryGrid");
@@ -521,6 +798,7 @@
       document.getElementById("lightbox").classList.add("open");
     }
     function closeLightbox() {
+      document.getElementById("lightbox.open")?.classList.remove("open");
       document.getElementById("lightbox").classList.remove("open");
     }
   </script>

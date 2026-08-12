@@ -148,11 +148,13 @@
   .theme-btn {
     position: fixed; top: 18px; left: 18px;
     background: var(--card); border: 1px solid var(--border);
-    color: var(--text); border-radius: 8px; padding: 6px 10px;
-    font-size: 0.8rem; cursor: pointer; z-index: 100;
+    color: var(--text); border-radius: 12px; padding: 8px 12px;
+    font-size: 1.05rem; cursor: pointer; z-index: 100;
+    line-height: 1; min-width: 42px; min-height: 42px;
   }
+  .theme-btn:hover { border-color: var(--accent); }
   .engine-label {
-    position: fixed; top: 52px; left: 18px;
+    position: fixed; top: 66px; left: 18px;
     font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
     text-transform: uppercase; color: var(--muted); z-index: 100;
     pointer-events: none; user-select: none;
@@ -160,7 +162,15 @@
   body.anima .engine-label { color: var(--accent); }
   .card { width: 100%; max-width: 720px; }
   h1 { font-size: 1.25rem; font-weight: 500; margin-bottom: 20px; color: var(--text); }
-  label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  label {
+    display: block; font-size: 0.75rem; color: var(--muted);
+    margin-bottom: 8px; margin-top: 4px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .section-block { margin-bottom: 16px; }
+  .section-block > label { margin-bottom: 10px; }
+  .section-block .row { margin-bottom: 8px; }
+  .section-block .lora-help { margin-top: 4px; margin-bottom: 0; }
   textarea, input[type="text"] {
     width: 100%; background: var(--card); border: 1px solid var(--border);
     border-radius: 12px; padding: 14px; color: var(--text); font-size: 0.95rem;
@@ -436,11 +446,15 @@ button.primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
   box-shadow:0 30px 90px #000b!important;
 }
 .gate-box h2{font-weight:800!important}
-#turboSection{
+#turboSection, #samplerSection{
   background:#0a0e19;border:1px solid #2b3450;border-radius:14px;
-  padding:12px;margin-bottom:14px;
+  padding:14px 14px 12px;margin-bottom:16px;
 }
-#turboSection .row{margin-bottom:0}
+#turboSection .row, #samplerSection .row{margin-bottom:6px}
+#turboSection label, #samplerSection label{margin-top:0;margin-bottom:10px}
+html[data-theme="light"] #samplerSection{
+  background:#eef2f8;border-color:#d9dfeb;
+}
 </style>
 
 
@@ -544,29 +558,10 @@ html[data-theme="light"] #themeToggle .sun{display:inline}
 </style>
 <script>
 (function(){
-  const saved=localStorage.getItem('forgelab_theme')||'dark';
-  document.documentElement.dataset.theme=saved;
-  function applyEngineTheme(){
-    const isAnima=document.body.classList.contains('anima') ||
-      (typeof currentEngine!=='undefined' && currentEngine==='anima');
-    document.body.classList.toggle('anima-theme',isAnima);
-    document.body.classList.toggle('krea-theme',!isAnima);
-  }
-  window.addEventListener('DOMContentLoaded',()=>{
-    const b=document.createElement('button');
-    b.id='themeToggle';
-    b.title='Toggle light / dark theme';
-    b.innerHTML='<span class="moon">☾</span><span class="sun">☀</span>';
-    const host=document.querySelector('header')||document.body;
-    host.appendChild(b);
-    b.onclick=()=>{
-      const next=document.documentElement.dataset.theme==='light'?'dark':'light';
-      document.documentElement.dataset.theme=next;
-      localStorage.setItem('forgelab_theme',next);
-    };
-    applyEngineTheme();
-    setInterval(applyEngineTheme,300);
-  });
+  try {
+    const saved = localStorage.getItem('forgelab_theme') || 'dark';
+    document.documentElement.dataset.theme = saved;
+  } catch(e) {}
 })();
 </script>
 
@@ -588,7 +583,7 @@ html[data-theme="light"] #themeToggle .sun{display:inline}
   </div>
 </div>
 
-<button class="theme-btn" onclick="toggleTheme()">Theme</button>
+<button class="theme-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle light / dark">☾</button>
 <div class="engine-label" id="engineLabel">Krea</div>
 
 <div class="status-dot">
@@ -633,7 +628,7 @@ html[data-theme="light"] #themeToggle .sun{display:inline}
   </div>
   <div class="lora-help" id="ckptHint" style="margin-top:-6px;margin-bottom:14px">Using: DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors</div>
 
-  <div id="turboSection" style="display:none">
+  <div id="turboSection" class="section-block" style="display:none">
     <label>Turbo LoRA</label>
     <div class="row" id="turboRow">
       <button class="ratio-btn active" data-turbo="none">None</button>
@@ -641,7 +636,31 @@ html[data-theme="light"] #themeToggle .sun{display:inline}
       <button class="ratio-btn" data-turbo="v3">Turbo v3</button>
       <button class="ratio-btn" data-turbo="v02">Turbo v0.2</button>
     </div>
-    <div class="lora-help" style="margin-top:-6px;margin-bottom:14px">Turbo = fewer steps · faster. None = full quality (more steps).</div>
+    <div class="lora-help">Turbo = fewer steps · faster. None = full quality (more steps).</div>
+  </div>
+
+  <div id="samplerSection" class="section-block">
+    <label>Sampler</label>
+    <div class="row" id="samplerRow">
+      <button class="ratio-btn active" data-sampler="euler" title="Clean, reliable default">Euler</button>
+      <button class="ratio-btn" data-sampler="euler_ancestral" title="More variation / dynamic">Euler A</button>
+      <button class="ratio-btn" data-sampler="er_sde" title="Fast + sharp features">er_sde</button>
+      <button class="ratio-btn" data-sampler="ddim" title="Stable, clean results">DDIM</button>
+      <button class="ratio-btn" data-sampler="res_multistep" title="Polished multi-step">res_multistep</button>
+      <button class="ratio-btn" data-sampler="exp_heun_2_x0" title="Crisp geometry / hands / eyes">exp_heun_2_x0</button>
+      <button class="ratio-btn" data-sampler="dpmpp_2m" title="Clean polished alternative">DPM++ 2M</button>
+    </div>
+    <div class="lora-help" id="samplerHint" style="margin-bottom:12px">Euler — clean &amp; reliable overall</div>
+
+    <label>Scheduler</label>
+    <div class="row" id="schedulerRow">
+      <button class="ratio-btn" data-scheduler="simple" title="Fast reliable turbo go-to">Simple</button>
+      <button class="ratio-btn active" data-scheduler="beta" title="Strong realism + lighting">Beta</button>
+      <button class="ratio-btn" data-scheduler="normal" title="Standard default">Normal</button>
+      <button class="ratio-btn" data-scheduler="beta57" title="Sharp stable features">Beta57</button>
+      <button class="ratio-btn" data-scheduler="sgm_uniform" title="Good contrast &amp; stability">SGM Uniform</button>
+    </div>
+    <div class="lora-help" id="schedulerHint">Beta — good realism &amp; dynamic lighting</div>
   </div>
 
   <div id="img2imgSection" style="display:none;margin-bottom:14px">
@@ -851,7 +870,26 @@ let currentSize = "medium";
 let currentEngine = "krea";
 let currentCheckpoint = "DasiwaKrea2TurboRaw_cutedisasterV2Turbo.safetensors";
 let currentTurbo = "none";
+let currentSampler = "euler";
+let currentScheduler = "beta";
 let img2imgName = null; // filename on ComfyUI server after upload
+
+const SAMPLER_HINTS = {
+  euler: "Euler — clean & reliable overall",
+  euler_ancestral: "Euler A — more variation / dynamic look",
+  er_sde: "er_sde — fast while keeping sharp features",
+  ddim: "DDIM — stable, clean results",
+  res_multistep: "res_multistep — polished multi-step look",
+  exp_heun_2_x0: "exp_heun_2_x0 — crisp geometry, hands, eyes, skin",
+  dpmpp_2m: "DPM++ 2M — clean polished alternative"
+};
+const SCHEDULER_HINTS = {
+  simple: "Simple — fast reliable turbo go-to (8–12 steps)",
+  beta: "Beta — good realism & dynamic lighting",
+  normal: "Normal — standard default schedule",
+  beta57: "Beta57 — sharp stable features & contrast",
+  sgm_uniform: "SGM Uniform — solid stability & contrast"
+};
 let genTimes = [];
 let activeLoraStrengths = {};
 let loraPreviews = {};
@@ -1326,6 +1364,27 @@ document.querySelectorAll("#turboRow .ratio-btn").forEach(btn => {
   };
 });
 
+document.querySelectorAll("#samplerRow .ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#samplerRow .ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentSampler = btn.dataset.sampler || "euler";
+    const h = document.getElementById("samplerHint");
+    if (h) h.textContent = SAMPLER_HINTS[currentSampler] || currentSampler;
+    saveSettings();
+  };
+});
+document.querySelectorAll("#schedulerRow .ratio-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("#schedulerRow .ratio-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentScheduler = btn.dataset.scheduler || "beta";
+    const h = document.getElementById("schedulerHint");
+    if (h) h.textContent = SCHEDULER_HINTS[currentScheduler] || currentScheduler;
+    saveSettings();
+  };
+});
+
 function setEngine(engine) {
   currentEngine = engine;
   document.querySelectorAll("#engineRow .ratio-btn").forEach(b => {
@@ -1414,10 +1473,22 @@ loadSettings();
 applyResolution();
 
 function toggleTheme() {
-  document.body.classList.toggle("light");
-  store.set("theme", document.body.classList.contains("light") ? "light" : "dark");
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  document.body.classList.toggle("light", next === "light");
+  try { localStorage.setItem("forgelab_theme", next); } catch(e) {}
+  store.set("theme", next);
+  const btn = document.getElementById("themeToggle");
+  if (btn) btn.textContent = next === "light" ? "☀" : "☾";
 }
-if (store.get("theme") === "light") document.body.classList.add("light");
+(function initTheme() {
+  let t = "dark";
+  try { t = localStorage.getItem("forgelab_theme") || store.get("theme") || "dark"; } catch(e) {}
+  document.documentElement.dataset.theme = t;
+  document.body.classList.toggle("light", t === "light");
+  const btn = document.getElementById("themeToggle");
+  if (btn) btn.textContent = t === "light" ? "☀" : "☾";
+})();
 
 function saveSettings() {
   const selected = [];
@@ -1430,7 +1501,9 @@ function saveSettings() {
     size: currentSize,
     checkpoint: currentCheckpoint,
     engine: currentEngine,
-    turbo: currentTurbo
+    turbo: currentTurbo,
+    sampler: currentSampler,
+    scheduler: currentScheduler
   }));
 }
 function loadSettings() {
@@ -1455,6 +1528,22 @@ function loadSettings() {
       document.querySelectorAll("#turboRow .ratio-btn").forEach(b => {
         b.classList.toggle("active", (b.dataset.turbo || "none") === s.turbo);
       });
+    }
+    if (s.sampler) {
+      currentSampler = s.sampler;
+      document.querySelectorAll("#samplerRow .ratio-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.sampler === s.sampler);
+      });
+      const h = document.getElementById("samplerHint");
+      if (h) h.textContent = SAMPLER_HINTS[currentSampler] || currentSampler;
+    }
+    if (s.scheduler) {
+      currentScheduler = s.scheduler;
+      document.querySelectorAll("#schedulerRow .ratio-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.scheduler === s.scheduler);
+      });
+      const h = document.getElementById("schedulerHint");
+      if (h) h.textContent = SCHEDULER_HINTS[currentScheduler] || currentScheduler;
     }
     if (s.engine === "anima" || s.engine === "krea") {
       // apply engine UI first so the right checkpoint row is visible
@@ -1789,8 +1878,8 @@ function getAnimaWorkflow(promptText, negText, seed, selected, denoise, imgName)
         "seed": seed,
         "steps": steps,
         "cfg": cfg,
-        "sampler_name": "euler_ancestral",
-        "scheduler": "beta",
+        "sampler_name": currentSampler,
+        "scheduler": currentScheduler,
         "denoise": denoise,
         "model": ["226", 0],
         "positive": ["5", 0],
@@ -1932,7 +2021,7 @@ function getBaseWorkflow(promptText) {
     "212":{"inputs":{"filename":"%time_%basemodelname_%seed","path":"%basemodelname","extension":"png","lossless_webp":true,"quality_jpeg_or_webp":100,"optimize_png":false,"embed_workflow":true,"save_workflow_as_json":false,"counter":0,"time_format":"%Y-%m-%d-%H%M%S","show_preview":false,"images":["164",0],"metadata":["213",0]},"class_type":"Image Saver Simple"},
     "213":{"inputs":{"modelname":"Kreav2(new)","positive":["123:115",0],"negative":"unknown","width":["123:221",0],"height":["123:221",1],"seed_value":["12",0],"steps":8,"cfg":1,"sampler_name":"","scheduler_name":"normal","denoise":1,"clip_skip":0,"additional_hashes":"","download_civitai_data":true,"easy_remix":true,"custom":""},"class_type":"Image Saver Metadata"},
     "123:116":{"inputs":{"switch":["121",0],"on_false":["119",0],"on_true":["123:112",0]},"class_type":"ComfySwitchNode"},
-    "123:6":{"inputs":{"seed":["12",0],"steps":8,"cfg":1,"sampler_name":"euler","scheduler":"linear_quadratic","denoise":1,"model":["123:189",0],"positive":["123:8",0],"negative":["123:29",0],"latent_image":["11",0]},"class_type":"KSampler"},
+    "123:6":{"inputs":{"seed":["12",0],"steps":8,"cfg":1,"sampler_name":currentSampler,"scheduler":currentScheduler,"denoise":1,"model":["123:189",0],"positive":["123:8",0],"negative":["123:29",0],"latent_image":["11",0]},"class_type":"KSampler"},
     "123:8":{"inputs":{"text":["123:115",0],"clip":["30",1]},"class_type":"CLIPTextEncode"},
     "123:29":{"inputs":{"conditioning":["123:8",0]},"class_type":"ConditioningZeroOut"},
     "123:189":{"inputs":{"shift":4,"model":["30",0]},"class_type":"ModelSamplingAuraFlow"},
